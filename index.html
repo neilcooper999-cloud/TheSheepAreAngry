@@ -765,12 +765,16 @@ function drawPred(w,camx,camy){
   const k=w.kind,sc=k==='fox'?0.7:k==='dog'?0.85:1;
   ctx.save();ctx.translate(w.x-camx,w.y-camy);ctx.rotate(w.face);ctx.scale(sc,sc);
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(2,4,20,9,0,0,7);ctx.fill();
+  if(k==='dog'&&w.tame){ctx.strokeStyle='rgba(230,180,34,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,30,17,0,0,7);ctx.stroke()}
   ctx.fillStyle=k==='fox'?'#d0612a':k==='dog'?'#1f1d1c':'#6e6a66';ctx.beginPath();ctx.ellipse(0,0,18,8,0,0,7);ctx.fill();
   ctx.beginPath();ctx.ellipse(-20,0,k==='fox'?12:10,k==='fox'?5:3.5,0,0,7);ctx.fill();
   if(k==='fox'){ctx.fillStyle='#f4efe4';ctx.beginPath();ctx.arc(-30,0,3.5,0,7);ctx.fill();ctx.fillStyle='#d0612a'}
   if(k==='dog'){ctx.fillStyle='#f2efe6';ctx.beginPath();ctx.ellipse(10,0,6,6,0,0,7);ctx.fill();ctx.fillStyle='#1f1d1c'}
   ctx.beginPath();ctx.moveTo(14,-6);ctx.lineTo(28,0);ctx.lineTo(14,6);ctx.fill();
-  if(k==='dog'&&w.tame){ctx.strokeStyle='#e6b422';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(14,-6);ctx.lineTo(14,6);ctx.stroke()}
+  // a tamed dog wears Flossy's yellow: a thick collar round the neck with a tag, and a faint yellow ring on the ground
+  if(k==='dog'&&w.tame){ctx.fillStyle='#3a2f00';ctx.beginPath();ctx.roundRect(11,-8.5,6,17,2.5);ctx.fill();
+    ctx.fillStyle='#e6b422';ctx.beginPath();ctx.roundRect(12,-7.5,4,15,2);ctx.fill();
+    ctx.beginPath();ctx.arc(17.5,0,2.6,0,7);ctx.fill();ctx.strokeStyle='#3a2f00';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#1f1d1c'}
   ctx.fillStyle=w.state==='stun'||w.state==='stuck'?'#9cbf6a':k==='dog'?'#c9b48a':'#ffd36a';ctx.beginPath();ctx.arc(20,-3,1.8,0,7);ctx.arc(20,3,1.8,0,7);ctx.fill();
   ctx.restore();
 }
