@@ -20,6 +20,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 @keyframes pulse{0%{color:#e6b422;transform:scale(1.35)}100%{color:inherit;transform:scale(1)}}
 #vFlock{display:inline-block;transform-origin:left center}
 @media (prefers-reduced-motion:reduce){#vFlock.pulse{animation:none}}
+/* narrow screens: a compact stats panel that leaves room for the minimap (28% of the width) beside it */
+@media (max-width:640px){#hud{min-width:0;max-width:calc(72vw - 36px);padding:7px 9px;gap:3px;font-size:10.5px;box-sizing:border-box}
+  #hud .top{font-size:13px}.reg{font-size:9.5px}.row{grid-template-columns:44px 1fr 40px;gap:6px}.bar{height:5px}.stores{gap:1px 7px}}
 .reg{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-top:-2px}
 .stores{display:flex;flex-wrap:wrap;gap:4px 10px;font-variant-numeric:tabular-nums;color:#d8d4c0}
 .stores b{color:var(--ink)}
@@ -109,8 +112,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const WORLD=9600,T=40,COLS=WORLD/T,DAY=200,NIGHT_START=0.62;
+const WORLD=14400,T=40,COLS=WORLD/T,DAY=200,NIGHT_START=0.62;
 const VIS_DAY=290,VIS_NIGHT=80,EYES_RANGE=560,BLEAT_RANGE=700;
+const MM_SPAN=3600; // how much of the world the minimap shows across, centred on Flossy
 let vw,vh,dpr;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr}
 addEventListener('resize',resize);resize();
@@ -145,11 +149,11 @@ function newGame(){
   const nA=makeNoise(),nB=makeNoise(),nW=makeNoise(),nBg=makeNoise(),nS=makeNoise(),nR=makeNoise(),nG=makeNoise(),nT=makeNoise();
   // noise values bunch up around 0.5, so turn "fraction of tiles" into a threshold from samples
   const samp=[...Array(3000)].map(()=>nW(rnd(0,500),rnd(0,500))).sort((a,b)=>a-b),Q=p=>p<=0?-1:samp[Math.min(2999,~~(p*3000))];
-  // one region per cell of a jittered 5x5 grid; home in the middle, the ruined towns in the far corners
-  const seeds=[];for(let gy=0;gy<5;gy++)for(let gx=0;gx<5;gx++)seeds.push({x:(gx+rnd(.25,.75))*WORLD/5,y:(gy+rnd(.25,.75))*WORLD/5});
+  // one region per cell of a jittered 7x7 grid; home in the middle, the ruined towns furthest out
+  const RG=7,seeds=[];for(let gy=0;gy<RG;gy++)for(let gx=0;gx<RG;gx++)seeds.push({x:(gx+rnd(.25,.75))*WORLD/RG,y:(gy+rnd(.25,.75))*WORLD/RG});
   seeds.forEach(sd=>sd.d=Math.hypot(sd.x-c,sd.y-c)/(WORLD*0.7));
   const byD=[...seeds].sort((a,b)=>a.d-b.d),pick=a=>a[~~rnd(0,a.length)];
-  byD.forEach((sd,k)=>{const key=k===0?'meadows':k>=byD.length-2?'town':sd.d<0.3?pick(['meadows','farm','farm','woods'])
+  byD.forEach((sd,k)=>{const key=k===0?'meadows':k>=byD.length-4?'town':sd.d<0.3?pick(['meadows','farm','farm','woods'])
       :sd.d<0.55?pick(['farm','woods','marsh','meadows','fells']):pick(['fells','fells','marsh','woods','farm']);
     sd.t=REG.findIndex(r=>r.key===key)});
   for(let ty=0;ty<COLS;ty++)for(let tx=0;tx<COLS;tx++){const i=ty*COLS+tx;
@@ -163,7 +167,7 @@ function newGame(){
     grass[i]=tr===MEADOW?clamp(R.grass[0]+(R.grass[1]-R.grass[0])*nG(tx/5,ty/5)*1.2+rnd(-.05,.05),0,1):0;
   }
   // old roads wander across the whole map
-  for(let k=0;k<10;k++){let x=k%2?0:rnd(10,COLS-10),y=k%2?rnd(10,COLS-10):0,a=k%2?0:Math.PI/2;
+  for(let k=0;k<14;k++){let x=k%2?0:rnd(10,COLS-10),y=k%2?rnd(10,COLS-10):0,a=k%2?0:Math.PI/2;
     for(let n=0;n<COLS*1.6;n++){a+=rnd(-.12,.12);x+=Math.cos(a);y+=Math.sin(a);if(x<0||y<0||x>=COLS||y>=COLS)break;
       for(const[ox,oy]of[[0,0],[1,0],[0,1]]){const tx=~~x+ox,ty=~~y+oy;if(tx<COLS&&ty<COLS&&terr[ty*COLS+tx]!==WATER){terr[ty*COLS+tx]=ROAD;grass[ty*COLS+tx]=0}}}}
   const far=(x,y,r)=>Math.hypot(x-c,y-c)>r,tt=(x,y)=>terr[tileAt(x,y)];
@@ -187,7 +191,7 @@ function newGame(){
   const addPen=(x,y)=>{if(tt(x,y)===WATER||!far(x,y,500)||pens.some(o=>Math.hypot(o.x-x,o.y-y)<300))return;const pen={x,y,r:46};pens.push(pen);
     const n=2+(Math.random()<.5?1:0);for(let k=0;k<n;k++){const sh=mkSheep(x+rnd(-18,18),y+rnd(-18,18),Math.random()<.35);sh.pen=pen;strays.push(sh)}};
   for(const h of houses){const R=REG[reg[tileAt(h.x,h.y)]];if(Math.random()<(R.key==='farm'?0.7:0.15))addPen(h.x-70,h.y+h.h/2)}
-  for(let i=0;i<4000&&pens.length<10;i++){const x=rnd(300,WORLD-300),y=rnd(300,WORLD-300);if(REG[reg[tileAt(x,y)]].key==='farm'&&tt(x,y)===MEADOW)addPen(x,y)}
+  for(let i=0;i<4000&&pens.length<20;i++){const x=rnd(300,WORLD-300),y=rnd(300,WORLD-300);if(REG[reg[tileAt(x,y)]].key==='farm'&&tt(x,y)===MEADOW)addPen(x,y)}
   // one ewe and one ram within reach of home, so the first day has a chance
   for(const ram of[false,true]){for(let n=0;n<50;n++){const a=rnd(0,6.28),r=ram?rnd(520,700):rnd(320,460),x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;if(tt(x,y)===MEADOW){strays.push(mkSheep(x,y,ram));break}}}
   S={t:DAY*0.12,terr,grass,reg,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
@@ -303,6 +307,22 @@ function baaCharge(){try{const a=audio();if(!a)return;const t=a.currentTime,dur=
   const f1=a.createBiquadFilter(),f2=a.createBiquadFilter(),mix=a.createGain();f1.type=f2.type='bandpass';f1.frequency.value=800;f1.Q.value=5;f2.frequency.value=1250;f2.Q.value=7;mix.gain.value=2.2;
   o.connect(g);g.connect(f1).connect(mix);g.connect(f2).connect(mix);mix.connect(out);
   for(const n of[o,trem,vib]){n.start(t);n.stop(t+dur+0.05)}
+}catch(e){}}
+
+// The bleat: a short, high baa that rings out like a sonar ping, with echoes coming back off the hills
+function bleatSonar(){try{const a=audio();if(!a)return;const t=a.currentTime;
+  const out=a.createGain();out.gain.value=0.35;out.connect(a.destination);
+  const dl=a.createDelay(1),fb=a.createGain(),lp=a.createBiquadFilter();dl.delayTime.value=0.32;fb.gain.value=0.5;lp.type='lowpass';lp.frequency.value=1800;
+  dl.connect(lp).connect(fb).connect(dl);lp.connect(out);
+  const o=a.createOscillator(),g=a.createGain(),trem=a.createOscillator(),tg=a.createGain(),ping=a.createOscillator(),pg=a.createGain();
+  o.type='triangle';o.frequency.setValueAtTime(820,t);o.frequency.linearRampToValueAtTime(900,t+0.06);o.frequency.exponentialRampToValueAtTime(760,t+0.3);
+  trem.frequency.value=22;tg.gain.value=0.4;trem.connect(tg).connect(g.gain);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.5,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+0.32);
+  ping.type='sine';ping.frequency.setValueAtTime(1560,t);ping.frequency.exponentialRampToValueAtTime(1480,t+0.6);
+  pg.gain.setValueAtTime(0.0001,t);pg.gain.linearRampToValueAtTime(0.4,t+0.005);pg.gain.exponentialRampToValueAtTime(0.001,t+0.7);
+  for(const[src,gn]of[[o,g],[ping,pg]]){src.connect(gn);gn.connect(out);gn.connect(dl)}
+  for(const n of[o,trem])n.start(t),n.stop(t+0.4);ping.start(t);ping.stop(t+0.75);
+  setTimeout(()=>{try{fb.gain.value=0;out.disconnect()}catch(e){}},3500);
 }catch(e){}}
 
 // Background music: a little sequencer with one tune per region. Night closes the filter, drops the volume and thins out the melody.
@@ -490,7 +510,7 @@ function build(id){
   else if(id==='trap'){S.traps.push({x:fx,y:fy});say(fx,fy-24,'Lovely.','#c89a5c')}
 }
 function bleat(){
-  const p=S.p;S.bleatCd=4;S.pings.push({x:p.x,y:p.y,t:0});say(p.x,p.y-34,'BAAAAA!','#e6b422');
+  const p=S.p;S.bleatCd=4;S.pings.push({x:p.x,y:p.y,t:0});say(p.x,p.y-34,'BAAAAA!','#e6b422');bleatSonar();
   let found=0;
   for(const s of S.strays){const d=Math.hypot(s.x-p.x,s.y-p.y);if(d<BLEAT_RANGE){s.seen=3.5;found++;
     setTimeout(()=>{if(S.strays.includes(s))say(s.x,s.y-24,['Baa!','Over here!','Meh?','Baaa!'][~~rnd(0,4)],'#cfe0ff')},300+d*1.2)}}
@@ -886,14 +906,19 @@ function draw(){
   ctx.globalAlpha=1;
   if(joy){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.ox,joy.oy,50,0,7);ctx.stroke();
     const dx=joy.x-joy.ox,dy=joy.y-joy.oy,m=Math.hypot(dx,dy),k=m>50?50/m:1;ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,18,0,7);ctx.fill()}
-  // minimap: only explored ground, the flock, and strays heard answering a bleat
-  const mm=Math.min(130,vw*0.28),mx=vw-mm-12,my=12,sc=mm/WORLD;
-  ctx.fillStyle='#000';ctx.fillRect(mx,my,mm,mm);ctx.imageSmoothingEnabled=false;ctx.drawImage(mmc,mx,my,mm,mm);ctx.imageSmoothingEnabled=true;
-  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.strokeRect(mx,my,mm,mm);
-  ctx.fillStyle='#cfe0ff';for(const s of S.strays)if(s.seen>0||seen(s))ctx.fillRect(mx+s.x*sc-1.5,my+s.y*sc-1.5,3,3);
-  ctx.fillStyle='#fff';for(const s of S.flock)ctx.fillRect(mx+s.x*sc-1,my+s.y*sc-1,2.5,2.5);
-  for(const w of S.preds)if(w.tame||seen(w)){ctx.fillStyle=w.tame?'#9cbf6a':'#e05a4a';ctx.fillRect(mx+w.x*sc-1,my+w.y*sc-1,3,3)}
-  ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(mx+p.x*sc,my+p.y*sc,3,0,7);ctx.fill();
+  // minimap: drops below the stats panel when the screen is too narrow for both side by side.
+  // It shows a window of the explored ground that scrolls with Flossy, with the flock, and strays heard answering a bleat
+  const mm=Math.min(150,vw*0.28),mx=vw-mm-12,sc=mm/MM_SPAN,hr=$('hud').getBoundingClientRect(),my=hr.right+8>mx?hr.bottom+8:12,ox=p.x-MM_SPAN/2,oy=p.y-MM_SPAN/2;
+  const mp=(x,y)=>[mx+(x-ox)*sc,my+(y-oy)*sc],inMM=(x,y)=>x>ox&&x<ox+MM_SPAN&&y>oy&&y<oy+MM_SPAN;
+  ctx.save();ctx.beginPath();ctx.rect(mx,my,mm,mm);ctx.clip();
+  ctx.fillStyle='#000';ctx.fillRect(mx,my,mm,mm);ctx.imageSmoothingEnabled=false;ctx.drawImage(mmc,mx-ox*sc,my-oy*sc,WORLD*sc,WORLD*sc);ctx.imageSmoothingEnabled=true;
+  for(const pg of S.pings){const k=pg.t/1.4,[x,y]=mp(pg.x,pg.y);ctx.strokeStyle=`rgba(230,180,34,${0.8*(1-k)})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,k*BLEAT_RANGE*sc,0,7);ctx.stroke()}
+  const dot=(o,c,r)=>{if(!inMM(o.x,o.y))return;const[x,y]=mp(o.x,o.y);ctx.fillStyle=c;ctx.fillRect(x-r/2,y-r/2,r,r)};
+  for(const s of S.strays)if(s.seen>0||seen(s))dot(s,'#cfe0ff',4);
+  for(const s of S.flock)dot(s,'#fff',3);
+  for(const w of S.preds)if(w.tame||seen(w))dot(w,w.tame?'#9cbf6a':'#e05a4a',3.5);
+  ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(mx+mm/2,my+mm/2,3,0,7);ctx.fill();
+  ctx.restore();ctx.strokeStyle='rgba(255,255,255,.25)';ctx.strokeRect(mx,my,mm,mm);
 }
 function hud(){
   const p=S.p,set=(id,v)=>$(id).textContent=v,bar=(id,f)=>$(id).style.width=clamp(f,0,1)*100+'%';
