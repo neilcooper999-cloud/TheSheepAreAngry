@@ -1,4 +1,4 @@
-# The Shepherdless
+# The Sheep Are Angry!
 
 A top-down survival game where you play a sheep. A catastrophe has removed all humans from the Earth, and the sheep are making a bid to become the dominant species.
 
