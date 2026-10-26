@@ -48,6 +48,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .resbar{display:flex;flex-wrap:wrap;gap:8px;margin:.7rem 0 .2rem;position:sticky;top:-22px;background:#232c1c;padding-block:8px;z-index:1}
 .res{display:flex;align-items:center;gap:7px;background:#1a2114;border:1px solid #3d4a31;border-radius:6px;padding:6px 10px;font:500 12px var(--mono)}
 .res i,.cost i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.res.load{margin-left:auto}
 .res b{font:800 18px/1 var(--display);font-variant-numeric:tabular-nums}
 .sub{font-size:12px;color:#b9b4a0;margin:-.2rem 0 .5rem}
 .recipes{grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))}
@@ -84,6 +85,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
   <div class="row"><span>Fleece</span><div class="bar"><i id="bFleece" style="background:#f4f2e6"></i></div><span id="vFleece">2kg</span></div>
   <div class="row"><span>Flock</span><span id="vFlock">1 sheep</span><span id="vReady"></span></div>
   <div class="stores"><span>Wool <b id="vWool">0</b></span><span>Wood <b id="vWood">0</b></span><span>Stone <b id="vStone">0</b></span><span>Metal <b id="vMetal">0</b></span></div>
+  <div class="row"><span>Load</span><div class="bar"><i id="bLoad" style="background:#c89a5c"></i></div><span id="vLoad">0/15</span></div>
 </div>
 <div id="btns">
   <button id="bBleat" type="button">BLEAT<span>B</span></button><button id="bShear" type="button">SHEAR<span>F</span></button>
@@ -250,19 +252,24 @@ function explore(){
 }
 
 // charging into trees, buildings, big rocks and wrecks. What you can break depends on your horns.
+// how much the flock can carry: Flossy's own share, plus more for every ewe and more again for a ram
+const carryCap=()=>15+S.flock.reduce((a,s)=>a+(s.ram?10:6),0);
+const load=()=>S.wool+S.wood+S.stone+S.metal;
+const room=()=>Math.max(0,carryCap()-load());
+function fullUp(p){say(p.x,p.y-34,'Can\'t carry any more!','#e05a4a');if(!S.fullShown){S.fullShown=true;toast('The flock can\'t carry any more. Spend some on crafting, or grow the flock to carry more.',4.5)}}
 const bonus=()=>(S.horns>=2?1:0)+Math.floor(S.flock.length/5); // the flock pitches in
 function chargeHit(p){
-  for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+bonus());t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
+  for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+bonus(),Math.floor(room()));if(g<=0){bonk(p,t.x,t.y,'','#fff');fullUp(p);return}t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
     if(t.res<=0){S.trees.splice(S.trees.indexOf(t),1);S.stumps.push({x:t.x,y:t.y});say(t.x,t.y-30,'Timber!','#c89a5c')}return}}
   for(const r of S.rocks){if(r.big&&Math.hypot(p.x-r.x,p.y-r.y)<r.r+20){
     if(S.horns<1){bonk(p,r.x,r.y,'Ow! Too hard for a bare head.','#e05a4a');if(!S.stoneShown){S.stoneShown=true;toast('Rock is too hard to break with your head. Craft a Ram-horn Helm from wood first.')}return}
-    const g=Math.min(r.res,1+~~rnd(0,2)+bonus());r.res-=g;S.stone+=g;r.r=Math.max(12,r.r-3);bonk(p,r.x,r.y,`+${g} stone`,'#c9c6bb');
+    const g=Math.min(r.res,1+~~rnd(0,2)+bonus(),Math.floor(room()));if(g<=0){bonk(p,r.x,r.y,'','#fff');fullUp(p);return}r.res-=g;S.stone+=g;r.r=Math.max(12,r.r-3);bonk(p,r.x,r.y,`+${g} stone`,'#c9c6bb');
     if(r.res<=0){S.rocks.splice(S.rocks.indexOf(r),1);S.rubble.push({x:r.x,y:r.y,w:22,h:22,stone:1})}return}}
   for(const k of S.wrecks){if(Math.hypot(p.x-k.x,p.y-k.y)<k.r+22){
     if(S.horns<2){bonk(p,k.x,k.y,'Clang! Your horns just bounce off.','#e05a4a');if(!S.metalShown){S.metalShown=true;toast('Old machines hold metal, but you need Stone-tipped Horns to break into them.')}return}
-    const g=Math.min(k.res,1+~~rnd(0,2)+(S.horns>=3?1:0)+Math.floor(S.flock.length/5));k.res-=g;S.metal+=g;bonk(p,k.x,k.y,`+${g} metal`,'#9fb4c4');
+    const g=Math.min(k.res,1+~~rnd(0,2)+(S.horns>=3?1:0)+Math.floor(S.flock.length/5),Math.floor(room()));if(g<=0){bonk(p,k.x,k.y,'','#fff');fullUp(p);return}k.res-=g;S.metal+=g;bonk(p,k.x,k.y,`+${g} metal`,'#9fb4c4');
     if(k.res<=0){S.wrecks.splice(S.wrecks.indexOf(k),1);S.rubble.push({x:k.x-15,y:k.y-10,w:30,h:20,metal:1});say(k.x,k.y-30,'Stripped for scrap!','#9fb4c4')}return}}
-  for(const h of S.houses){if(inHouse(p,h,20)){const g=Math.min(h.res,2+~~rnd(0,2)+bonus()*2);h.res-=g;S.wood+=g;bonk(p,h.x+h.w/2,h.y+h.h/2,`+${g} wood`,'#c89a5c');
+  for(const h of S.houses){if(inHouse(p,h,20)){const g=Math.min(h.res,2+~~rnd(0,2)+bonus()*2,Math.floor(room()));if(g<=0){bonk(p,h.x+h.w/2,h.y+h.h/2,'','#fff');fullUp(p);return}h.res-=g;S.wood+=g;bonk(p,h.x+h.w/2,h.y+h.h/2,`+${g} wood`,'#c89a5c');
     if(h.res<=0){S.houses.splice(S.houses.indexOf(h),1);S.rubble.push(h);say(h.x+h.w/2,h.y,'The old barn comes down!','#c89a5c')}return}}
 }
 function bonk(p,x,y,txt,col){
@@ -311,7 +318,7 @@ function showCraft(){
       <button type="button" data-id="${r.id}" ${ok?'':'disabled'}>${label}</button></div>`};
   card.classList.add('wide');
   card.innerHTML=`<div class="chead"><div><div class="eb">Craft</div><h1>Flock <span>works</span></h1></div><button id="close" type="button" class="ghost x" aria-label="Close">Close ✕</button></div>
-  <div class="resbar">${RES.map(([k,n,c])=>`<div class="res"><i style="background:${c}"></i><span>${n}</span><b>${Math.floor(S[k])}</b></div>`).join('')}</div>
+  <div class="resbar">${RES.map(([k,n,c])=>`<div class="res"><i style="background:${c}"></i><span>${n}</span><b>${Math.floor(S[k])}</b></div>`).join('')}<div class="res load"><span>Carrying</span><b>${Math.floor(load())}/${carryCap()}</b></div></div>
   ${groups.map(([tk,title,sub])=>`<h2 class="trk">${title}</h2>${sub?`<div class="sub">${sub}</div>`:''}<div class="recipes">${all.filter(r=>r.track===tk).map(card_).join('')}</div>`).join('')}`;
   ov.hidden=false;
   card.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{build(b.dataset.id);closeCraft()});
@@ -351,8 +358,10 @@ function shear(){
   if(S.shears<1)return;
   const reach=S.shears>=2?180:110,mult=S.shears>=2?1.5:1;
   // the flock can shear Flossy too
+  if(room()<1){fullUp(p);return}
   if(p.fleece>=3&&S.flock.length){const w=(p.fleece-1.5)*mult;got+=w;n++;p.fleece=1.5;say(p.x,p.y-22,'snip','#f4f2e6')}
-  for(const s of S.flock){if(s.fleece>=4&&Math.hypot(s.x-p.x,s.y-p.y)<reach){const w=(s.fleece-1.5)*mult;got+=w;n++;s.fleece=1.5;say(s.x,s.y-22,'snip','#f4f2e6')}}
+  for(const s of S.flock){if(s.fleece>=4&&Math.hypot(s.x-p.x,s.y-p.y)<reach){if(got>=room())break;const w=(s.fleece-1.5)*mult;got+=w;n++;s.fleece=1.5;say(s.x,s.y-22,'snip','#f4f2e6')}}
+  got=Math.min(got,room());
   if(n){S.wool+=got;say(p.x,p.y-34,`+${got.toFixed(1)} wool`,'#f4f2e6')}
   else toast(S.flock.length?'No fleece is ready yet. Fleeces are ready at 4 kg (shown by a yellow dot).':'You need a flock to shear.',2.5);
 }
@@ -387,7 +396,7 @@ function update(dt){
   let rubbing=false;
   if(moving&&p.dash<=0){for(const r of S.rocks.concat(S.posts,S.trees)){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16){rubbing=true;break}}}
   collide(p,14);
-  if(rubbing&&p.fleece>3){const d=Math.min(p.fleece-3,0.5*dt);p.fleece-=d;S.wool+=d*0.3;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
+  if(rubbing&&p.fleece>3){const d=Math.min(p.fleece-3,0.5*dt);p.fleece-=d;S.wool+=Math.min(d*0.3,room());if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
   else if(rubbing&&!S.rubShown){S.rubShown=true;say(p.x,p.y-30,'That\'s as much as rubbing will get off.','#c9c3a8')}
   p.fleece+=dt*0.035;
   if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Flossy has rolled onto her back. A flockmate nearby helps her up faster.')}
@@ -716,6 +725,7 @@ function hud(){
   const ring=(id,left,max)=>{const b=$(id),pr=max>0?clamp(1-left/max,0,1):1;b.style.setProperty('--p',pr.toFixed(3));b.classList.toggle('cooling',pr<1);b.classList.toggle('ready',pr>=1)};
   $('bShear').hidden=S.shears<1;
   ring('bCharge',p.dashCd,p.dashMax||1);ring('bBleat',S.bleatCd,4);
+  const ld=load(),cap=carryCap();bar('bLoad',ld/cap);set('vLoad',`${Math.floor(ld)}/${cap}`);$('bLoad').style.background=ld>=cap-0.5?'#e05a4a':'#c89a5c';
   set('vWool',~~S.wool);set('vWood',S.wood);set('vStone',S.stone);set('vMetal',S.metal);
 }
 
@@ -729,6 +739,7 @@ function showIntro(){
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
   <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
   <li><kbd>Shift</kbd> or CHARGE to headbutt. At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
+  <li>A bigger flock can carry more: each ewe adds 6 to how much you can hold and each ram adds 10.</li>
   <li>A bigger flock sees further, helps you gather more with every charge, and from ten sheep a lookout warns you of wolves. It also gets hungrier and draws more wolves.</li>
   <li>Walk near a stray to recruit it. Their fleeces grow, and once you've made shears, press <kbd>F</kbd> or SHEAR near flockmates with a yellow dot to harvest wool.</li>
   <li>The map is split into regions. Home Meadows are gentle. The Wildwood has timber and foxes, the Fells have stone and wolves, Old Farmland has barns, tractors and wild sheepdogs, and the Ruined Town is rich in metal but has no grass and danger day and night.</li>

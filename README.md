@@ -25,6 +25,10 @@ The map is split into regions, each with its own mix of resources and danger: Ho
 
 Wolves kill a ewe in one bite. Foxes are smaller and take two bites for a ewe and four for a ram. Rams defend the flock on their own and survive two wolf bites. Wild sheepdogs herd your sheep away; charge one three times to train it, and it patrols around the flock and chases off predators.
 
+## Carrying
+
+The flock can only carry so much: 15 for Flossy, plus 6 for each ewe and 10 for each ram. The bigger builds cost more than Flossy can carry alone.
+
 ## Crafting
 
 You start able to gather only wood. The Ram-horn Helm lets you break rock for stone, and Stone-tipped Horns let you break old cars and tractors for metal. Stone unlocks Flint Shears, which you need before you can harvest wool. Shelter has its own tree, upgraded in place: Wooden Pen, Wool-lined Pen, Drystone Fold, Iron-gated Steading. Wolves chew through the weaker pens.
