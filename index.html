@@ -109,7 +109,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const WORLD=9600,T=40,COLS=WORLD/T,DAY=140,NIGHT_START=0.62;
+const WORLD=9600,T=40,COLS=WORLD/T,DAY=200,NIGHT_START=0.62;
 const VIS_DAY=290,VIS_NIGHT=80,EYES_RANGE=560,BLEAT_RANGE=700;
 let vw,vh,dpr;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr}
@@ -547,7 +547,7 @@ function update(dt){
   if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Flossy has rolled onto her back. A flockmate nearby helps her up faster.')}
   // hunger and grazing
   const sh=shelterHere();
-  p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.008)*(sh&&sh.tier>=2?0.6:1);
+  p.hunger-=dt*PACE*(0.42+heavy*0.04+S.flock.length*0.008)*(sh&&sh.tier>=2?0.6:1);
   if(sh&&sh.tier>=4&&p.still>1)p.health+=dt*2;
   if(p.grazing){
     // every sheep eats its own patch, and the hunger bar is the whole flock's
@@ -673,7 +673,9 @@ function update(dt){
 }
 const terrAt=(x,y)=>S.terr[tileAt(x,y)];
 const TERR_SPEED=[1,0.85,0.5,1,1.15];
-function moveBy(o,dt){const f=TERR_SPEED[terrAt(o.x,o.y)];
+// every animal, Flossy included, moves through here, so PACE slows the whole game evenly
+const PACE=0.75;
+function moveBy(o,dt){const f=TERR_SPEED[terrAt(o.x,o.y)]*PACE;
   const nx=o.x+o.vx*dt*f;if(terrAt(nx,o.y)!==WATER)o.x=nx;else o.vx*=-0.2;
   const ny=o.y+o.vy*dt*f;if(terrAt(o.x,ny)!==WATER)o.y=ny;else o.vy*=-0.2}
 function inFold(o){return S.folds.some(f=>Math.hypot(o.x-f.x,o.y-f.y)<f.r)}
