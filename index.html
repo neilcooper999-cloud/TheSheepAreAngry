@@ -85,6 +85,10 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .card .rec button{margin:0;padding:9px 14px;font-size:14px}
 .card button:disabled{background:#4a5440;color:#8c947f;cursor:not-allowed}
 .card button.ghost{background:none;color:var(--ink);border:1px solid #55634a}
+.introbtns{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:6px}.introbtns button{margin-top:0}
+.card p.warn{font:800 17px/1.3 var(--display);color:var(--rust)}
+.opt{display:flex;gap:12px;align-items:flex-start;background:#2c3723;border:1px solid #3d4a31;border-radius:8px;padding:12px;margin:10px 0;cursor:pointer}
+.opt input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--tag);flex:none}.opt b{display:block;font:800 15px/1.2 var(--display)}
 .card button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:800 16px/1.2 var(--display);
   background:var(--panel);padding:8px 14px;border-radius:6px;pointer-events:none;text-align:center;max-width:min(34rem,calc(100% - 32px))}
@@ -211,7 +215,7 @@ function mkSheep(x,y,ram){const hp=ram?4:2;return{name:pickName(ram),x,y,vx:0,vy
 // ---------- input ----------
 const keys={};
 let joy=null,grazeBtn=false,chargeReq=false,bleatReq=false,shearReq=false,craftReq=false;
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='shift'||k==='e')chargeReq=true;if(k==='m'){muted=!muted;toast(muted?'Sound off (press M to turn it back on)':'Sound on',2)}if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='shift'||k==='e')chargeReq=true;if(k==='m'){const on=!(soundOn||musicOn);soundOn=musicOn=on;saveAudio();toast(on?'Sound and music on':'Sound and music off (press M to turn them back on)',2)}if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 cv.addEventListener('pointerdown',e=>{joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
@@ -301,9 +305,11 @@ function recruit(s,quiet){
   const el=$('vFlock');el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');
   chime(s.ram);
 }
-let actx=null,muted=false;
+let actx=null,soundOn=true,musicOn=true;
+try{const st=JSON.parse(localStorage.getItem('sheepAudio')||'{}');if(st.sound===false)soundOn=false;if(st.music===false)musicOn=false}catch(e){}
+const saveAudio=()=>{try{localStorage.setItem('sheepAudio',JSON.stringify({sound:soundOn,music:musicOn}))}catch(e){}};
 const ac=()=>{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx};
-const audio=()=>muted?null:ac();
+const audio=()=>soundOn?ac():null;
 // One plain "baa": a sawtooth voice through "aa" formants with the fast warble of a real sheep
 function baaCharge(){try{const a=audio();if(!a)return;const t=a.currentTime,dur=0.62;
   const out=a.createGain();out.gain.value=0.5;out.connect(a.destination);
@@ -403,7 +409,7 @@ function musicStart(){try{const a=ac();if(!M.bus){M.lp=a.createBiquadFilter();M.
   if(!M.timer)M.timer=setInterval(musicPump,40)}catch(e){}}
 function musicPump(){const a=actx;if(!a||!M.bus)return;
   const p=S.p,night=isNight(),want=S.over?null:REG[regionAt(p.x,p.y)].key,now=a.currentTime;
-  const vol=muted||!want?0:night?0.55:0.85;
+  const vol=!musicOn||!want?0:night?0.55:0.85;
   if(want!==M.key&&!M.switchAt){M.switchAt=now+(M.key?1.6:0.05);M.bus.gain.setTargetAtTime(0,now,0.4)}   // fade out the old region's tune
   if(M.switchAt&&now>=M.switchAt){M.switchAt=0;M.key=want;M.k=0;M.next=Math.max(M.next,now+0.05)}
   if(!M.switchAt){M.bus.gain.setTargetAtTime(vol,now,M.key===want?0.5:1);M.lp.frequency.setTargetAtTime(night?1400:9000,now,2)}
@@ -959,12 +965,22 @@ function hud(){
 const ov=$('overlay'),card=$('card');
 function showIntro(){
   card.classList.remove('wide');
-  card.innerHTML=`<div class="eb">Prototype · the first nights</div><h1>The Sheep Are <span>Angry!</span></h1>
-  <p>The humans are gone. You are Flossy, a ewe with a yellow ear tag. You can only see what's around you, and at night you can barely see at all.</p>
-  <ul><li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
+  card.innerHTML=`<div class="eb">A survival game</div><h1>The Sheep Are <span>Angry!</span></h1>
+  <p>The humans are gone. You are Flossy, a ewe with a yellow ear tag and an attitude.</p>
+  <p>Ewe must survive and save as many of your sheepy friends as you can.</p>
+  <p>Build your flock, craft shelter and defences, and remember: a traditional enemy may be willing to be your friend.</p>
+  <p class="warn">But beware of the night!!! Keep your flock close!!</p>
+  <div class="introbtns"><button id="go" type="button">Leave the field</button>
+  <button id="details" type="button" class="ghost">Game Details</button><button id="opts" type="button" class="ghost">Options</button></div>`;
+  ov.hidden=false;$('go').onclick=start;$('details').onclick=showDetails;$('opts').onclick=showOptions;$('go').focus({preventScroll:true});ov.scrollTop=0;
+}
+function showDetails(){
+  card.innerHTML=`<div class="chead"><div><div class="eb">How to play</div><h1>Game <span>Details</span></h1></div><button id="back" type="button" class="ghost x">Back</button></div>
+  <ul><li><kbd>M</kbd> turns sound and music off and on.</li>
+  <li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
   <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
-  <li><kbd>Shift</kbd> or CHARGE to headbutt. (Press <kbd>M</kbd> to mute the sound.) At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
+  <li><kbd>Shift</kbd> or CHARGE to headbutt. At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
   <li>A bigger flock can carry more: each ewe adds 6 to how much you can hold and each ram adds 10.</li>
   <li>A bigger flock sees further, helps you gather more with every charge, and from ten sheep a lookout warns you of wolves. It also gets hungrier and draws more wolves.</li>
   <li>Sheep are rare out here. There's a ewe and a ram somewhere near home, and the old farms have pens with sheep shut inside: charge a pen to break them out.</li>
@@ -976,8 +992,16 @@ function showIntro(){
   <li>The best items need a big flock as well as materials. At the top of the tree, Laser Horns let Flossy and her rams zap predators from a distance, using old tech dug out of the Ruined Town.</li>
   <li><kbd>C</kbd> or CRAFT to open the upgrade tree. Start with a Wooden Pen and a Ram-horn Helm. Wolves will chew through a weak pen, so upgrade it as you go: wool-lined, then drystone, then iron-gated.</li>
   <li>Your own fleece slows you down, and too much can leave you cast on your back. Rubbing against trees, rocks and posts tears a little off and gives you a scrap of wool, but only down to 3 kg. To get it all off you need shears.</li></ul>
-  <button id="go" type="button">Leave the field</button>`;
-  ov.hidden=false;$('go').onclick=start;$('go').focus();
+  <button id="back2" type="button" class="ghost">Back</button>`;
+  $('back').onclick=$('back2').onclick=showIntro;$('back').focus({preventScroll:true});ov.scrollTop=0;
+}
+function showOptions(){
+  card.innerHTML=`<div class="chead"><div><div class="eb">Settings</div><h1><span>Options</span></h1></div><button id="back" type="button" class="ghost x">Back</button></div>
+  <label class="opt"><input type="checkbox" id="optMusic" ${musicOn?'checked':''}><span><b>Music</b> A different tune for each region</span></label>
+  <label class="opt"><input type="checkbox" id="optSound" ${soundOn?'checked':''}><span><b>Sound</b> Baas, bleats, chimes and the rest</span></label>
+  <p class="sub">You can also press <kbd>M</kbd> during the game to turn both off and on.</p>`;
+  $('optMusic').onchange=e=>{musicOn=e.target.checked;saveAudio()};$('optSound').onchange=e=>{soundOn=e.target.checked;saveAudio()};
+  $('back').onclick=showIntro;$('back').focus({preventScroll:true});ov.scrollTop=0;
 }
 function showOver(){
   card.classList.remove('wide');
