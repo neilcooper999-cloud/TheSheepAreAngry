@@ -112,7 +112,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const WORLD=14400,T=40,COLS=WORLD/T,DAY=200,NIGHT_START=0.62;
+const WORLD=14400,T=40,COLS=WORLD/T,DAY=320,NIGHT_START=0.72; // a day lasts 320s; night falls 72% of the way through
 const VIS_DAY=290,VIS_NIGHT=80,EYES_RANGE=560,BLEAT_RANGE=700;
 const bleatRange=()=>BLEAT_RANGE*(S.trumpet?1.5:1);
 const MM_SPAN=3600; // how much of the world the minimap shows across, centred on Flossy
@@ -195,7 +195,7 @@ function newGame(){
   for(let i=0;i<4000&&pens.length<20;i++){const x=rnd(300,WORLD-300),y=rnd(300,WORLD-300);if(REG[reg[tileAt(x,y)]].key==='farm'&&tt(x,y)===MEADOW)addPen(x,y)}
   // one ewe and one ram within reach of home, so the first day has a chance
   for(const ram of[false,true]){for(let n=0;n<50;n++){const a=rnd(0,6.28),r=ram?rnd(520,700):rnd(320,460),x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;if(tt(x,y)===MEADOW){strays.push(mkSheep(x,y,ram));break}}}
-  S={t:DAY*0.12,terr,grass,reg,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
+  S={t:DAY*0.07,terr,grass,reg,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
     folds:[],walls:[],decoys:[],traps:[],pens,confetti:[],penShown:false,alerts:[],barrenShown:false,wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
     p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,dash:0,dashCd:0,cast:0,grazing:false,bob:0,still:0},
     wool:0,wood:0,stone:0,tech:0,beams:[],shocks:[],laserCd:0,ramLasers:false,bags:0,trumpet:false,balm:false,ramCoat:false,techShown:false,bleatCd:0,orbit:0,circling:false,sp:{wolf:0,fox:8,dog:25},curReg:-1,seenKinds:{},driveShown:false,
