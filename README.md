@@ -14,7 +14,7 @@ Open `index.html` in a browser. It is a single file with no build step.
 - B or BLEAT to call out with a sonar-like ping; nearby strays answer and show briefly on the screen and on the minimap (wolves hear it at night)
 - F or SHEAR to harvest wool from your flock (needs shears)
 - C or CRAFT to open the upgrade tree
-- M to turn sound and music off or on
+- M to turn sound and music off or on together, or use Options on the start screen to switch music and sound separately (remembered next time)
 
 On a touch screen, CHARGE is the big button in the bottom-right corner, with GRAZE, BLEAT, SHEAR and CRAFT in an arc above and to its left. SHEAR only appears once you have shears.
 
