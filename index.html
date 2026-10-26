@@ -14,6 +14,10 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .bar i{display:block;height:100%;width:50%;border-radius:4px}
 #hud .top{display:flex;justify-content:space-between;gap:12px;font:800 15px/1.1 var(--display)}
 #rank{color:var(--tag)}
+#vFlock.pulse{animation:pulse 1.2s ease-out}
+@keyframes pulse{0%{color:#e6b422;transform:scale(1.35)}100%{color:inherit;transform:scale(1)}}
+#vFlock{display:inline-block;transform-origin:left center}
+@media (prefers-reduced-motion:reduce){#vFlock.pulse{animation:none}}
 .reg{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-top:-2px}
 .stores{display:flex;flex-wrap:wrap;gap:4px 10px;font-variant-numeric:tabular-nums;color:#d8d4c0}
 .stores b{color:var(--ink)}
@@ -166,21 +170,30 @@ function newGame(){
       if(tt(h.x+h.w,h.y+h.h)!==WATER&&tt(h.x+h.w,h.y)!==WATER&&tt(h.x,h.y+h.h)!==WATER&&!houses.some(o=>Math.abs(o.x-h.x)<170&&Math.abs(o.y-h.y)<140))houses.push(h)}
     if(Math.random()<0.0005*(R.key==='farm'?4:R.key==='meadows'?1:0.3)){const a=Math.random()<.5?0:Math.PI/2,n=8+~~rnd(0,10);
       for(let k=0;k<n;k++){const px=x+Math.cos(a)*k*34,py=y+Math.sin(a)*k*34;if(dry(px,py))posts.push({x:px,y:py,r:6})}}
-    if((tr===MEADOW||tr===BOG)&&far(x,y,360)&&Math.random()<0.0009*R.strays){const n=1+~~rnd(0,3);
+    if((tr===MEADOW||tr===BOG)&&far(x,y,360)&&Math.random()<0.00022*R.strays){const n=Math.random()<.8?1:2;
       for(let k=0;k<n;k++){const sx=x+rnd(-40,40),sy=y+rnd(-40,40);if(tt(sx,sy)!==WATER)strays.push(mkSheep(sx,sy,Math.random()<.2))}}
   }
   for(const h of houses){const x=h.x+h.w+30,y=h.y+h.h/2;if(dry(x,y)&&Math.random()<.6)wrecks.push({x,y,r:20,a:rnd(0,3.14),res:8,tractor:true})}
-  // a few strays close to home so the first day has a chance
-  for(let k=0;k<4;k++){const a=rnd(0,6.28),r=rnd(380,700),x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;if(tt(x,y)!==WATER)strays.push(mkSheep(x,y,k===0))}
+  // abandoned pens with two or three sheep shut inside, mostly beside farm buildings
+  const pens=[];
+  const addPen=(x,y)=>{if(tt(x,y)===WATER||!far(x,y,500)||pens.some(o=>Math.hypot(o.x-x,o.y-y)<300))return;const pen={x,y,r:46};pens.push(pen);
+    const n=2+(Math.random()<.5?1:0);for(let k=0;k<n;k++){const sh=mkSheep(x+rnd(-18,18),y+rnd(-18,18),Math.random()<.35);sh.pen=pen;strays.push(sh)}};
+  for(const h of houses){const R=REG[reg[tileAt(h.x,h.y)]];if(Math.random()<(R.key==='farm'?0.7:0.15))addPen(h.x-70,h.y+h.h/2)}
+  for(let i=0;i<4000&&pens.length<10;i++){const x=rnd(300,WORLD-300),y=rnd(300,WORLD-300);if(REG[reg[tileAt(x,y)]].key==='farm'&&tt(x,y)===MEADOW)addPen(x,y)}
+  // one ewe and one ram within reach of home, so the first day has a chance
+  for(const ram of[false,true]){for(let n=0;n<50;n++){const a=rnd(0,6.28),r=ram?rnd(520,700):rnd(320,460),x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;if(tt(x,y)===MEADOW){strays.push(mkSheep(x,y,ram));break}}}
   S={t:DAY*0.12,terr,grass,reg,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
-    folds:[],walls:[],decoys:[],traps:[],alerts:[],barrenShown:false,wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
+    folds:[],walls:[],decoys:[],traps:[],pens,confetti:[],penShown:false,alerts:[],barrenShown:false,wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
     p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,dash:0,dashCd:0,cast:0,grazing:false,bob:0,still:0},
     wool:0,wood:0,stone:0,tech:0,beams:[],shocks:[],laserCd:0,ramLasers:false,techShown:false,bleatCd:0,orbit:0,circling:false,sp:{wolf:0,fox:8,dog:25},curReg:-1,seenKinds:{},driveShown:false,
     maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,circleShown:false,grazeShown:false,lastDay:1,shake:0};
   mmx.fillStyle='#000';mmx.fillRect(0,0,COLS,COLS);grid=null;
 }
 // rams are tougher: two wolf bites or four fox bites, against one and two for a ewe
-function mkSheep(x,y,ram){const hp=ram?4:2;return{x,y,vx:0,vy:0,face:rnd(0,6.28),ram,fleece:rnd(2,5),wand:rnd(0,6.28),bob:rnd(0,9),seen:0,hp,maxhp:hp,rcd:0}}
+const EWE_NAMES=['Daisy','Clover','Mabel','Pearl','Bluebell','Hazel','Poppy','Rosie','Willow','Maud','Dot','Ivy','Nettle','Tansy','Fern','Heather','Primrose','Myrtle','Agnes','Sorrel','Bramble','Elsie','Winnie','Honey'];
+const RAM_NAMES=['Bertram','Angus','Hector','Barnaby','Rufus','Monty','Ivor','Gideon','Hamish','Cedric','Basil','Ogden'];
+let nameN=0;const pickName=ram=>{const l=ram?RAM_NAMES:EWE_NAMES;return l[(nameN++*7+~~rnd(0,l.length))%l.length]};
+function mkSheep(x,y,ram){const hp=ram?4:2;return{name:pickName(ram),x,y,vx:0,vy:0,face:rnd(0,6.28),ram,fleece:rnd(2,5),wand:rnd(0,6.28),bob:rnd(0,9),seen:0,hp,maxhp:hp,rcd:0}}
 
 // ---------- input ----------
 const keys={};
@@ -258,7 +271,26 @@ const load=()=>S.wool+S.wood+S.stone+S.metal+S.tech;
 const room=()=>Math.max(0,carryCap()-load());
 function fullUp(p){say(p.x,p.y-34,'Can\'t carry any more!','#e05a4a');if(!S.fullShown){S.fullShown=true;toast('The flock can\'t carry any more. Spend some on crafting, or grow the flock to carry more.',4.5)}}
 const bonus=()=>(S.horns>=2?1:0)+Math.floor(S.flock.length/5); // the flock pitches in
+// recruiting a sheep is a big moment: a name, a cheer, a burst of wool and a chime
+function recruit(s,quiet){
+  S.flock.push(s);s.seen=0;s.pen=null;const n=S.flock.length+1;
+  say(s.x,s.y-30,s.ram?`${s.name} the ram joins!`:`${s.name} joins!`,s.ram?'#e6b422':'#f4f2e6');
+  for(let k=0;k<26;k++){const a=rnd(0,6.28),v=rnd(60,200);S.confetti.push({x:s.x,y:s.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:rnd(.7,1.2),c:k%3?'#f4f2e6':s.ram?'#e6b422':'#9cbf6a'})}
+  S.cheer=1;
+  if(!quiet)toast(s.ram?`${s.name} the ram joins the flock! He will fight for you. (${n} sheep)`:`${s.name} joins the flock! (${n} sheep)`,3.5);
+  const el=$('vFlock');el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');
+  chime(s.ram);
+}
+let actx=null;
+function chime(low){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime;
+  [low?392:523,low?523:659,low?659:784].forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(0,t+i*0.09);g.gain.linearRampToValueAtTime(0.12,t+i*0.09+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.09+0.4);o.connect(g).connect(actx.destination);o.start(t+i*0.09);o.stop(t+i*0.09+0.45)})}catch(e){}}
 function chargeHit(p){
+  for(const pen of S.pens){if(Math.hypot(p.x-pen.x,p.y-pen.y)<pen.r+22){
+    S.pens.splice(S.pens.indexOf(pen),1);bonk(p,pen.x,pen.y,'Crash! The pen gives way!','#e6b422');
+    const freed=S.strays.filter(s=>s.pen===pen);for(const s of freed){S.strays.splice(S.strays.indexOf(s),1);recruit(s,true)}
+    toast(`You broke ${freed.length} sheep out of the pen: ${freed.map(s=>s.name+(s.ram?' the ram':'')).join(', ')}!`,4.5);
+    S.rubble.push({x:pen.x-pen.r,y:pen.y-pen.r,w:pen.r*2,h:pen.r*2});return}}
   for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+bonus(),Math.floor(room()));if(g<=0){bonk(p,t.x,t.y,'','#fff');fullUp(p);return}t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
     if(t.res<=0){S.trees.splice(S.trees.indexOf(t),1);S.stumps.push({x:t.x,y:t.y});say(t.x,t.y-30,'Timber!','#c89a5c')}return}}
   for(const r of S.rocks){if(r.big&&Math.hypot(p.x-r.x,p.y-r.y)<r.r+20){
@@ -436,8 +468,10 @@ function update(dt){
     s.wand+=rnd(-1,1)*dt;const sp=Math.random()<0.5?14:0;
     s.vx=Math.cos(s.wand)*sp;s.vy=Math.sin(s.wand)*sp;moveBy(s,dt);if(sp)s.face=s.wand;collide(s,12);
     s.fleece+=dt*0.01;
-    if(Math.hypot(s.x-p.x,s.y-p.y)<75){S.strays.splice(i,1);S.flock.push(s);
-      say(s.x,s.y-26,s.ram?'A ram joins you!':['Baa?','Take me with you!','Where are the humans?','Mehh!'][~~rnd(0,4)],s.ram?'#e6b422':'#f4f2e6')}}
+    if(s.pen){const d=Math.hypot(s.x-s.pen.x,s.y-s.pen.y);if(d>s.pen.r-14){s.x=s.pen.x+(s.x-s.pen.x)/d*(s.pen.r-14);s.y=s.pen.y+(s.y-s.pen.y)/d*(s.pen.r-14)}
+      if(!S.penShown&&Math.hypot(s.x-p.x,s.y-p.y)<vision()){S.penShown=true;toast('An old pen with sheep shut inside! Charge the hurdles to break them out.',4.5)}
+      continue}
+    if(Math.hypot(s.x-p.x,s.y-p.y)<75){S.strays.splice(i,1);recruit(s)}}
 
   // flock: follow Flossy, and circle her while she keeps moving
   const fl=S.flock,R=44+Math.sqrt(fl.length)*11;
@@ -472,7 +506,7 @@ function update(dt){
     if(s.ram&&!s.charge&&(s.rcd<=0||p.dash>0.2)){const t=nearestPred(s,230);if(t){s.charge=0.5;s.rcd=2.5;const a=Math.atan2(t.y-s.y,t.x-s.x);s.vx=Math.cos(a)*420;s.vy=Math.sin(a)*420;if(Math.random()<.4)say(s.x,s.y-24,'Ram charge!','#e6b422')}}
     if(s.charge>0){s.charge-=dt;if(s.charge<=0)s.charge=0}
   });
-  for(let i=fl.length-1;i>=0;i--){const s=fl[i];if(Math.hypot(s.x-p.x,s.y-p.y)>560){fl.splice(i,1);s.seen=0;S.strays.push(s);say(s.x,s.y-24,'Driven off!','#e05a4a')}}
+  for(let i=fl.length-1;i>=0;i--){const s=fl[i];if(Math.hypot(s.x-p.x,s.y-p.y)>560){fl.splice(i,1);s.seen=0;S.strays.push(s);say(s.x,s.y-24,`${s.name} is driven off!`,'#e05a4a')}}
   S.maxFlock=Math.max(S.maxFlock,fl.length+1);
 
   // predators: what turns up depends on the region and the time of day
@@ -513,7 +547,7 @@ function update(dt){
             if(best.hp<=0)S.decoys.splice(S.decoys.indexOf(best),1)}
           else if(best===p){if(p.dash<=0){p.health-=fox?10:25;say(p.x,p.y-30,'Ouch!','#e05a4a');w.bite=1.5;w.state='flee';w.st=fox?3:1.5}}
           else{best.hp-=fox?1:2;
-            if(best.hp<=0){S.flock.splice(S.flock.indexOf(best),1);say(best.x,best.y-20,best.ram?'A ram is taken!':'A flockmate is taken!','#e05a4a');w.state='flee';w.st=6}
+            if(best.hp<=0){S.flock.splice(S.flock.indexOf(best),1);say(best.x,best.y-20,`${best.name} is taken!`,'#e05a4a');toast(`${best.name}${best.ram?' the ram':''} was taken.`,3);w.state='flee';w.st=6}
             else{say(best.x,best.y-20,fox?'Nip! (bitten)':best.ram?'The ram shrugs off a bite!':'Bitten!','#e0835a');w.bite=fox?2:1.2;if(fox){w.state='flee';w.st=2.5}}}
         }}
     }
@@ -530,7 +564,8 @@ function update(dt){
   for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];t.life-=dt;t.y-=dt*14;if(t.life<=0)S.texts.splice(i,1)}
   for(let i=S.alerts.length-1;i>=0;i--){S.alerts[i].t-=dt;if(S.alerts[i].t<=0)S.alerts.splice(i,1)}
   for(let i=S.pings.length-1;i>=0;i--){S.pings[i].t+=dt;if(S.pings[i].t>1.4)S.pings.splice(i,1)}
-  S.shake=Math.max(0,S.shake-dt);
+  S.shake=Math.max(0,S.shake-dt);S.cheer=Math.max(0,(S.cheer||0)-dt*1.5);
+  for(let i=S.confetti.length-1;i>=0;i--){const c=S.confetti[i];c.t-=dt;c.x+=c.vx*dt;c.y+=c.vy*dt;c.vx*=0.94;c.vy*=0.94;if(c.t<=0)S.confetti.splice(i,1)}
   const n=fl.length+1;
   if(n>=5&&!S.flockShown){S.flockShown=true;toast('Rank up: Flock. While you keep moving, they circle you and the wolves hold back.',4.5)}
   if(n>=20&&!S.herdShown){S.herdShown=true;toast('Rank up: Herd. The valley is starting to belong to the sheep.',5)}
@@ -663,6 +698,9 @@ function draw(){
   const known=o=>S.explored[tileAt(o.x,o.y)];
   for(const h of S.rubble){const x=h.x-camx,y=h.y-camy;if(!known(h)||!onScreen(x,y,160))continue;
     ctx.fillStyle=h.metal?'#5d6a72':h.stone?'#77756c':'#5a3a2c';for(let k=0;k<6;k++){ctx.fillRect(x+((k*37)%h.w),y+((k*23)%h.h),12,8)}}
+  for(const pen of S.pens){const x=pen.x-camx,y=pen.y-camy;if(!known(pen)||!onScreen(x,y,60))continue;
+    ctx.strokeStyle='#7a5634';ctx.lineWidth=5;ctx.setLineDash([14,6]);ctx.strokeRect(x-pen.r,y-pen.r,pen.r*2,pen.r*2);ctx.setLineDash([]);
+    ctx.fillStyle='#5c3f26';for(const[cx,cy]of[[-1,-1],[1,-1],[-1,1],[1,1]])ctx.fillRect(x+cx*pen.r-4,y+cy*pen.r-4,8,8)}
   for(const s of S.stumps){const x=s.x-camx,y=s.y-camy;if(!known(s)||!onScreen(x,y,20))continue;ctx.fillStyle='#6b4c30';ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();ctx.fillStyle='#a07a50';ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill()}
   for(const h of S.houses){const x=h.x-camx,y=h.y-camy;if(!known(h)&&!known({x:h.x+h.w,y:h.y+h.h}))continue;if(x>vw||y>vh||x+h.w<0||y+h.h<0)continue;
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+6,y+8,h.w,h.h);ctx.fillStyle=h.res<8?'#6a3f30':'#7d4a37';ctx.fillRect(x,y,h.w,h.h);
@@ -730,6 +768,8 @@ function draw(){
     ctx.strokeStyle='#ffe0e6';ctx.lineWidth=1;ctx.stroke()}
   ctx.restore();ctx.globalAlpha=1;
   for(const sk of S.shocks){const k=sk.t/0.5;ctx.strokeStyle=`rgba(111,211,224,${0.8*(1-k)})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(sk.x-camx,sk.y-camy,20+k*120,0,7);ctx.stroke()}
+  for(const c of S.confetti){ctx.globalAlpha=Math.min(1,c.t*2);ctx.fillStyle=c.c;ctx.beginPath();ctx.arc(c.x-camx,c.y-camy,3,0,7);ctx.fill()}ctx.globalAlpha=1;
+  if(S.cheer>0){ctx.strokeStyle=`rgba(230,180,34,${S.cheer*0.6})`;ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,cy,60+(1-S.cheer)*160,0,7);ctx.stroke()}
   // bleat: echo ring, and strays that answered show through the fog
   for(const pg of S.pings){const k=pg.t/1.4;ctx.strokeStyle=`rgba(230,180,34,${0.6*(1-k)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(pg.x-camx,pg.y-camy,k*BLEAT_RANGE,0,7);ctx.stroke()}
   for(const s of S.strays)if(s.seen>0&&!seen(s,10)){const x=s.x-camx,y=s.y-camy;if(!onScreen(x,y,10))continue;
@@ -779,6 +819,7 @@ function showIntro(){
   <li><kbd>Shift</kbd> or CHARGE to headbutt. At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
   <li>A bigger flock can carry more: each ewe adds 6 to how much you can hold and each ram adds 10.</li>
   <li>A bigger flock sees further, helps you gather more with every charge, and from ten sheep a lookout warns you of wolves. It also gets hungrier and draws more wolves.</li>
+  <li>Sheep are rare out here. There's a ewe and a ram somewhere near home, and the old farms have pens with sheep shut inside: charge a pen to break them out.</li>
   <li>Walk near a stray to recruit it. Their fleeces grow, and once you've made shears, press <kbd>F</kbd> or SHEAR near flockmates with a yellow dot to harvest wool.</li>
   <li>The map is split into regions. Home Meadows are gentle. The Wildwood has timber and foxes, the Fells have stone and wolves, Old Farmland has barns, tractors and wild sheepdogs, and the Ruined Town is rich in metal but has no grass and danger day and night.</li>
   <li>Rams defend the flock on their own and survive two wolf bites. Foxes are small and need two bites to kill a ewe. A wild sheepdog herds your sheep away, but charge it three times and it's yours.</li>

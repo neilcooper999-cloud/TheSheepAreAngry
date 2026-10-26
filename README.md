@@ -19,6 +19,10 @@ When you graze the whole flock grazes, so a big flock strips a pasture fast, and
 
 You only see the area around Flossy, much less at night. Wolves attack a flock that stands still, but not one circling a moving Flossy.
 
+## Finding sheep
+
+Sheep are rare. There is one ewe and one ram near the start, a few wanderers out in the world, and pens on the old farms with two or three sheep shut inside: charge a pen to break them out. Every sheep has a name, and each one that joins gets a celebration.
+
 ## Regions and enemies
 
 The map is split into regions, each with its own mix of resources and danger: Home Meadows (gentle), Old Farmland (barns, tractors, wild sheepdogs), the Wildwood (timber, foxes by day), the Marsh (bog, lost sheep), the Fells (stone, little grass, wolves by day) and the Ruined Town (rich in metal but no grass, and dangerous day and night).
