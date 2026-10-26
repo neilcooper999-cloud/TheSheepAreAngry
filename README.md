@@ -33,6 +33,8 @@ The flock can only carry so much: 15 for Flossy, plus 6 for each ewe and 10 for 
 
 You start able to gather only wood. The Ram-horn Helm lets you break rock for stone, and Stone-tipped Horns let you break old cars and tractors for metal. Stone unlocks Flint Shears, which you need before you can harvest wool. Shelter has its own tree, upgraded in place: Wooden Pen, Wool-lined Pen, Drystone Fold, Iron-gated Steading. Wolves chew through the weaker pens.
 
+The top of the tree needs a big flock as well as materials. Iron-shod Horns let you dig old tech out of the Ruined Town. Dynamo Horns (flock of 12) send out a stunning shock with every charge. Laser Horns (flock of 20) fire at predators in range on their own, Ram Laser Rigs (flock of 25 and 3 rams) arm the rams too, and the Laser-fenced Compound (flock of 25) zaps anything that comes near its walls.
+
 ## Docs
 
 - `docs/concept.html`: the game concept (core loop, threats, rising to dominance, progression)
