@@ -27,6 +27,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 #btns button::before{content:"";position:absolute;inset:-3px;border-radius:50%;pointer-events:none;
   background:conic-gradient(var(--ring,rgba(255,255,255,.55)) calc(var(--p)*360deg),rgba(255,255,255,.12) 0);
   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px))}
+#btns button[hidden]{display:none}
 #btns button.cooling{color:rgba(244,242,230,.55)}
 #btns button.ready{--ring:var(--tag)}
 #btns button:focus-visible{outline:2px solid var(--tag)}
@@ -330,7 +331,7 @@ function build(id){
   else if(id==='horns1'){S.horns=1;say(p.x,p.y-40,'Horns on! Now for some rock.','#e6b422')}
   else if(id==='horns2'){S.horns=2;say(p.x,p.y-40,'Stone-tipped! Metal next.','#e6b422')}
   else if(id==='horns3'){S.horns=3;say(p.x,p.y-40,'Iron-shod!','#e6b422')}
-  else if(id==='shears1'){S.shears=1;say(p.x,p.y-40,'Snip snip.','#f4f2e6')}
+  else if(id==='shears1'){S.shears=1;say(p.x,p.y-40,'Snip snip.','#f4f2e6');toast('Shears made! Press F or SHEAR near flockmates with a yellow dot. They can shear you too.',4.5)}
   else if(id==='shears2'){S.shears=2;say(p.x,p.y-40,'Proper shears!','#f4f2e6')}
   else if(id==='wall'){const a=p.face+Math.PI/2;for(let k=-3;k<3;k++){const x=fx+Math.cos(a)*(k+0.5)*24,y=fy+Math.sin(a)*(k+0.5)*24;if(terrAt(x,y)!==WATER)S.walls.push({x,y,r:12})}say(fx,fy-24,'Stone on stone.','#c9c6bb')}
   else if(id==='decoy'){S.decoys.push({x:fx,y:fy,hp:3,decoy:true});say(fx,fy-24,'Baa? (it says nothing)','#e0835a')}
@@ -347,8 +348,10 @@ function bleat(){
 }
 function shear(){
   const p=S.p;let got=0,n=0;
-  if(S.shears<1){toast('You have nothing to shear with. Flint Shears need stone, and stone needs a Ram-horn Helm.',3);return}
+  if(S.shears<1)return;
   const reach=S.shears>=2?180:110,mult=S.shears>=2?1.5:1;
+  // the flock can shear Flossy too
+  if(p.fleece>=3&&S.flock.length){const w=(p.fleece-1.5)*mult;got+=w;n++;p.fleece=1.5;say(p.x,p.y-22,'snip','#f4f2e6')}
   for(const s of S.flock){if(s.fleece>=4&&Math.hypot(s.x-p.x,s.y-p.y)<reach){const w=(s.fleece-1.5)*mult;got+=w;n++;s.fleece=1.5;say(s.x,s.y-22,'snip','#f4f2e6')}}
   if(n){S.wool+=got;say(p.x,p.y-34,`+${got.toFixed(1)} wool`,'#f4f2e6')}
   else toast(S.flock.length?'No fleece is ready yet. Fleeces are ready at 4 kg (shown by a yellow dot).':'You need a flock to shear.',2.5);
@@ -380,11 +383,12 @@ function update(dt){
   const moving=Math.hypot(p.vx,p.vy)>40;
   if(moving){p.face=Math.atan2(p.vy,p.vx);p.bob+=dt*12;p.still=0}else p.still+=dt;
   if(p.dash>0)chargeHit(p);
-  // rubbing on rocks and posts sheds Flossy's own fleece
+  // rubbing on trees, rocks and posts tears off a little fleece, but only down to 3 kg; shears do the rest
   let rubbing=false;
-  if(moving&&p.dash<=0){for(const r of S.rocks.concat(S.posts)){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16){rubbing=true;break}}}
+  if(moving&&p.dash<=0){for(const r of S.rocks.concat(S.posts,S.trees)){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16){rubbing=true;break}}}
   collide(p,14);
-  if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
+  if(rubbing&&p.fleece>3){const d=Math.min(p.fleece-3,0.5*dt);p.fleece-=d;S.wool+=d*0.3;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
+  else if(rubbing&&!S.rubShown){S.rubShown=true;say(p.x,p.y-30,'That\'s as much as rubbing will get off.','#c9c3a8')}
   p.fleece+=dt*0.035;
   if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Flossy has rolled onto her back. A flockmate nearby helps her up faster.')}
   // hunger and grazing
@@ -710,6 +714,7 @@ function hud(){
   const dogs=S.preds.filter(w=>w.tame).length,rams=S.flock.filter(s=>s.ram).length;
   set('vFlock',`${S.flock.length+1} sheep${rams?` · ${rams} ram${rams>1?'s':''}`:''}${dogs?` · ${dogs} dog${dogs>1?'s':''}`:''}`);const ready=S.flock.filter(s=>s.fleece>=4).length;set('vReady',ready?`${ready} ready`:'');
   const ring=(id,left,max)=>{const b=$(id),pr=max>0?clamp(1-left/max,0,1):1;b.style.setProperty('--p',pr.toFixed(3));b.classList.toggle('cooling',pr<1);b.classList.toggle('ready',pr>=1)};
+  $('bShear').hidden=S.shears<1;
   ring('bCharge',p.dashCd,p.dashMax||1);ring('bBleat',S.bleatCd,4);
   set('vWool',~~S.wool);set('vWood',S.wood);set('vStone',S.stone);set('vMetal',S.metal);
 }
@@ -731,7 +736,7 @@ function showIntro(){
   <li>Wolves will attack a flock that stands still. With four or more flockmates, keep moving and they circle you, and the wolves can only pace around.</li>
   <li>When you graze, the whole flock grazes, so a big flock strips a pasture fast and grass takes many days to grow back. While heads are down the flock spreads out and can't see far. Only green meadow has grass; scree, bog and old roads have none, bog slows you, and nothing crosses water.</li>
   <li><kbd>C</kbd> or CRAFT to open the upgrade tree. Start with a Wooden Pen and a Ram-horn Helm. Wolves will chew through a weak pen, so upgrade it as you go: wool-lined, then drystone, then iron-gated.</li>
-  <li>Your own fleece slows you down. Rub against rocks and posts to shed it, or you may get cast on your back.</li></ul>
+  <li>Your own fleece slows you down, and too much can leave you cast on your back. Rubbing against trees, rocks and posts tears a little off and gives you a scrap of wool, but only down to 3 kg. To get it all off you need shears.</li></ul>
   <button id="go" type="button">Leave the field</button>`;
   ov.hidden=false;$('go').onclick=start;$('go').focus();
 }
