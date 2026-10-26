@@ -903,8 +903,9 @@ function draw(){
   ctx.globalAlpha=1;
   if(joy){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.ox,joy.oy,50,0,7);ctx.stroke();
     const dx=joy.x-joy.ox,dy=joy.y-joy.oy,m=Math.hypot(dx,dy),k=m>50?50/m:1;ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,18,0,7);ctx.fill()}
-  // minimap: a window of the explored ground that scrolls with Flossy, with the flock, and strays heard answering a bleat
-  const mm=Math.min(150,vw*0.28),mx=vw-mm-12,my=12,sc=mm/MM_SPAN,ox=p.x-MM_SPAN/2,oy=p.y-MM_SPAN/2;
+  // minimap: drops below the stats panel when the screen is too narrow for both side by side.
+  // It shows a window of the explored ground that scrolls with Flossy, with the flock, and strays heard answering a bleat
+  const mm=Math.min(150,vw*0.28),mx=vw-mm-12,sc=mm/MM_SPAN,hr=$('hud').getBoundingClientRect(),my=hr.right+8>mx?hr.bottom+8:12,ox=p.x-MM_SPAN/2,oy=p.y-MM_SPAN/2;
   const mp=(x,y)=>[mx+(x-ox)*sc,my+(y-oy)*sc],inMM=(x,y)=>x>ox&&x<ox+MM_SPAN&&y>oy&&y<oy+MM_SPAN;
   ctx.save();ctx.beginPath();ctx.rect(mx,my,mm,mm);ctx.clip();
   ctx.fillStyle='#000';ctx.fillRect(mx,my,mm,mm);ctx.imageSmoothingEnabled=false;ctx.drawImage(mmc,mx-ox*sc,my-oy*sc,WORLD*sc,WORLD*sc);ctx.imageSmoothingEnabled=true;
