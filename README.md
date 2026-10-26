@@ -11,7 +11,7 @@ Open `index.html` in a browser. It is a single file with no build step.
 - WASD or arrow keys to move (drag anywhere on a touch screen)
 - Space or GRAZE to eat
 - Shift or CHARGE to headbutt; rams in your flock charge with you
-- B or BLEAT to call out; nearby strays answer and show briefly (wolves hear it at night)
+- B or BLEAT to call out with a sonar-like ping; nearby strays answer and show briefly on the screen and on the minimap (wolves hear it at night)
 - F or SHEAR to harvest wool from your flock (needs shears)
 - C or CRAFT to open the upgrade tree
 - M to turn sound and music off or on
@@ -20,7 +20,7 @@ On a touch screen, CHARGE is the big button in the bottom-right corner, with GRA
 
 When you graze the whole flock grazes, so a big flock strips a pasture fast, and grass takes many days to grow back. A bigger flock sees further, gathers more and gets a lookout, but it is hungrier and draws more wolves.
 
-You only see the area around Flossy, much less at night. Wolves attack a flock that stands still, but not one circling a moving Flossy.
+You only see the area around Flossy, much less at night. The minimap in the top corner shows the ground you have explored near Flossy and scrolls as she walks. Wolves attack a flock that stands still, but not one circling a moving Flossy.
 
 ## Finding sheep
 
