@@ -3,9 +3,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Single look: the game world is its own palette, so colors are set explicitly for both host themes. */
-:root{--ink:#f4f2e6;--panel:rgba(22,28,18,.78);--tag:#e6b422;--rust:#e0835a;--moss:#9cbf6a;--bad:#e05a4a;
+:root{--ink:#f4f2e6;--panel:rgba(22,28,18,.8);--tag:#e6b422;--rust:#e0835a;--moss:#9cbf6a;--bad:#e05a4a;
   --display:"Bricolage Grotesque",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;color-scheme:dark}
-html,body{height:100%;margin:0;overflow:hidden;background:#1d2617;color:var(--ink);font:500 13px/1.3 var(--mono)}
+html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--ink);font:500 13px/1.3 var(--mono)}
 #c{display:block;width:100%;height:100%;touch-action:none}
 #hud{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:max(10px,env(safe-area-inset-left,0px));background:var(--panel);
   padding:10px 12px;border-radius:8px;display:grid;gap:6px;min-width:210px;pointer-events:none}
@@ -14,24 +14,36 @@ html,body{height:100%;margin:0;overflow:hidden;background:#1d2617;color:var(--in
 .bar i{display:block;height:100%;width:50%;border-radius:4px}
 #hud .top{display:flex;justify-content:space-between;gap:12px;font:800 15px/1.1 var(--display)}
 #rank{color:var(--tag)}
-#btns{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:10px}
-#btns button{width:74px;height:74px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:var(--panel);color:var(--ink);
-  font:800 13px/1 var(--display);touch-action:none;user-select:none;-webkit-user-select:none}
+.stores{display:flex;gap:12px;font-variant-numeric:tabular-nums;color:#d8d4c0}
+.stores b{color:var(--ink)}
+#btns{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+#btns button{width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:var(--panel);color:var(--ink);
+  font:800 11px/1 var(--display);touch-action:none;user-select:none;-webkit-user-select:none}
+#btns button span{display:block;font:500 9px/1 var(--mono);opacity:.6;margin-top:3px}
 #btns button:active,#btns button.on{background:rgba(230,180,34,.4)}
 #btns button:focus-visible{outline:2px solid var(--tag)}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,18,11,.72);
+#overlay{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(5,7,10,.78);overflow:auto;padding-block:16px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.card{max-width:30rem;background:#232c1c;border:1px solid #3d4a31;border-radius:10px;padding:24px;font:400 14px/1.55 system-ui,sans-serif}
+.card{max-width:32rem;background:#232c1c;border:1px solid #3d4a31;border-radius:10px;padding:22px;margin:auto 0;margin-block:auto;padding-block:22px;font:400 14px/1.5 system-ui,sans-serif}
 .card h1{font:800 2.2rem/1 var(--display);margin:0 0 .4rem;letter-spacing:-.02em}
-.card h1 span{color:var(--moss)}
-.card .eb{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--rust)}
+.card h1 span{color:var(--rust)}
+.card .eb{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--moss)}
 .card ul{padding-left:1.1rem;margin:.6rem 0}
+.card li{margin-bottom:.25rem}
 .card kbd{font:500 12px var(--mono);background:#36422b;padding:1px 6px;border-radius:4px}
 .card button{margin-top:10px;font:800 16px/1 var(--display);background:var(--tag);color:#2b2300;border:0;border-radius:6px;padding:12px 20px;cursor:pointer}
+.recipes{display:grid;gap:8px;margin:.8rem 0}
+.rec{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:#2c3723;border-radius:8px;padding:10px 12px}
+.rec>div{min-width:0}.rec p{margin:.15rem 0;font-size:13px;color:#d8d4c0}.rec b{font:800 15px/1.2 var(--display)}
+.rk{font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--moss);margin-bottom:3px}
+.rc{font:500 11px var(--mono);color:var(--tag)}
+.card .rec button{margin:0;padding:9px 14px;font-size:14px}
+.card button:disabled{background:#4a5440;color:#8c947f;cursor:not-allowed}
+.card button.ghost{background:none;color:var(--ink);border:1px solid #55634a}
 .card button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:800 16px/1.2 var(--display);
-  background:var(--panel);padding:8px 14px;border-radius:6px;pointer-events:none;text-align:center;max-width:calc(100% - 32px)}
-@media (max-width:640px){#toast{top:auto;bottom:calc(100px + env(safe-area-inset-bottom,0px))}}
+  background:var(--panel);padding:8px 14px;border-radius:6px;pointer-events:none;text-align:center;max-width:min(34rem,calc(100% - 32px))}
+@media (max-width:700px){#toast{top:auto;bottom:calc(160px + env(safe-area-inset-bottom,0px))}}
 </style>
 
 <canvas id="c"></canvas>
@@ -40,59 +52,95 @@ html,body{height:100%;margin:0;overflow:hidden;background:#1d2617;color:var(--in
   <div class="row"><span>Hunger</span><div class="bar"><i id="bHunger" style="background:#9cbf6a"></i></div><span id="vHunger">100</span></div>
   <div class="row"><span>Health</span><div class="bar"><i id="bHealth" style="background:#e05a4a"></i></div><span id="vHealth">100</span></div>
   <div class="row"><span>Fleece</span><div class="bar"><i id="bFleece" style="background:#f4f2e6"></i></div><span id="vFleece">2kg</span></div>
-  <div class="row"><span>Flock</span><span id="vFlock">1</span><span id="vWool">0 wool</span></div>
+  <div class="row"><span>Flock</span><span id="vFlock">1 sheep</span><span id="vReady"></span></div>
+  <div class="stores"><span>Wool <b id="vWool">0</b></span><span>Wood <b id="vWood">0</b></span><span>Stone <b id="vStone">0</b></span></div>
 </div>
-<div id="btns"><button id="bGraze" type="button">GRAZE</button><button id="bCharge" type="button">CHARGE</button></div>
+<div id="btns">
+  <button id="bBleat" type="button">BLEAT<span>B</span></button><button id="bShear" type="button">SHEAR<span>F</span></button>
+  <button id="bCraft" type="button">CRAFT<span>C</span></button>
+  <button id="bGraze" type="button">GRAZE<span>SPACE</span></button><button id="bCharge" type="button">CHARGE<span>SHIFT</span></button>
+</div>
 <div id="toast" hidden></div>
 <div id="overlay"><div class="card" id="card"></div></div>
 
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const WORLD=3200,T=40,COLS=WORLD/T,DAY=140,NIGHT_START=0.62;
+const WORLD=5600,T=40,COLS=WORLD/T,DAY=140,NIGHT_START=0.62;
+const VIS_DAY=290,VIS_NIGHT=80,EYES_RANGE=560,BLEAT_RANGE=700;
 let vw,vh,dpr;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr}
 addEventListener('resize',resize);resize();
 
-const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>v<a?a:v>b?b:v, dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>v<a?a:v>b?b:v;
 let S; // game state
+// explored-terrain picture for the minimap, one pixel per tile
+const mmc=document.createElement('canvas');mmc.width=mmc.height=COLS;const mmx=mmc.getContext('2d');
 
+// terrain: 0 meadow, 1 scree, 2 bog, 3 water, 4 old road. Only meadow can be grazed.
+const MEADOW=0,SCREE=1,BOG=2,WATER=3,ROAD=4;
 function newGame(){
-  const grass=new Float32Array(COLS*COLS);
-  // patchy meadow from a few overlapping blobs
-  const blobs=[...Array(40)].map(()=>({x:rnd(0,COLS),y:rnd(0,COLS),r:rnd(3,11)}));
-  for(let y=0;y<COLS;y++)for(let x=0;x<COLS;x++){
-    let g=0.25+Math.random()*0.15;
+  const terr=new Uint8Array(COLS*COLS),grass=new Float32Array(COLS*COLS),c=WORLD/2,ct=COLS/2;
+  const blob=(n,r0,r1,kind,ring)=>{for(let k=0;k<n;k++){const bx=rnd(0,COLS),by=rnd(0,COLS),r=rnd(r0,r1);
+    if(Math.hypot(bx-ct,by-ct)<r+8){k--;continue}
+    for(let y=~~(by-r-3);y<=by+r+3;y++)for(let x=~~(bx-r-3);x<=bx+r+3;x++){if(x<0||y<0||x>=COLS||y>=COLS)continue;
+      const d=Math.hypot(x-bx,y-by)+Math.sin(x*0.9+y*0.7)*1.2;
+      if(d<r)terr[y*COLS+x]=kind;else if(ring!=null&&d<r+2.5&&terr[y*COLS+x]===MEADOW&&Math.random()<.8)terr[y*COLS+x]=ring}}};
+  blob(9,4,9,SCREE);blob(8,3,7,BOG);blob(10,3,8,WATER,BOG);
+  // old roads wander across the map
+  for(let k=0;k<4;k++){let x=k%2?0:rnd(10,COLS-10),y=k%2?rnd(10,COLS-10):0,a=k%2?0:Math.PI/2;
+    for(let n=0;n<COLS*1.6;n++){a+=rnd(-.12,.12);x+=Math.cos(a);y+=Math.sin(a);if(x<0||y<0||x>=COLS||y>=COLS)break;
+      for(const[ox,oy]of[[0,0],[1,0],[0,1]]){const tx=~~x+ox,ty=~~y+oy;if(tx<COLS&&ty<COLS&&terr[ty*COLS+tx]!==WATER)terr[ty*COLS+tx]=ROAD}}}
+  const blobs=[...Array(110)].map(()=>({x:rnd(0,COLS),y:rnd(0,COLS),r:rnd(3,11)}));
+  for(let y=0;y<COLS;y++)for(let x=0;x<COLS;x++){const i=y*COLS+x;
+    if(terr[i]!==MEADOW){grass[i]=0;continue}
+    let g=0.2+Math.random()*0.15;
     for(const b of blobs){const d=Math.hypot(x-b.x,y-b.y);if(d<b.r)g+=0.7*(1-d/b.r)}
-    grass[y*COLS+x]=Math.min(1,g);
+    grass[i]=Math.min(1,g);
   }
-  const c=WORLD/2,rocks=[],posts=[],houses=[];
-  for(let i=0;i<80;i++){const r={x:rnd(60,WORLD-60),y:rnd(60,WORLD-60),r:rnd(14,32)};if(Math.hypot(r.x-c,r.y-c)>120)rocks.push(r)}
-  // old fence lines: rows of posts
-  for(let i=0;i<14;i++){let x=rnd(200,WORLD-200),y=rnd(200,WORLD-200);const a=Math.random()<.5?0:Math.PI/2,n=8+~~rnd(0,10);
-    for(let k=0;k<n;k++)posts.push({x:x+Math.cos(a)*k*34,y:y+Math.sin(a)*k*34,r:6})}
-  for(let i=0;i<5;i++)houses.push({x:rnd(300,WORLD-400),y:rnd(300,WORLD-400),w:rnd(90,150),h:rnd(70,110)});
+  const far=(x,y,r)=>Math.hypot(x-c,y-c)>r,tt=(x,y)=>terr[tileAt(x,y)];
+  const dry=(x,y)=>tt(x,y)!==WATER&&tt(x,y)!==ROAD;
+  const rocks=[],posts=[],houses=[],trees=[];
+  for(let i=0;i<260;i++){const r={x:rnd(60,WORLD-60),y:rnd(60,WORLD-60),r:rnd(12,34)};
+    if(tt(r.x,r.y)!==SCREE&&Math.random()<.6)continue; // rocks gather on the scree
+    r.big=r.r>=22;r.res=r.big?Math.round(r.r/4):0;if(far(r.x,r.y,130)&&dry(r.x,r.y))rocks.push(r)}
+  for(let k=0;k<60;k++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150),n=3+~~rnd(0,9);
+    for(let i=0;i<n;i++){const t={x:cx+rnd(-120,120),y:cy+rnd(-120,120),r:rnd(15,24),res:5};if(far(t.x,t.y,140)&&dry(t.x,t.y)&&tt(t.x,t.y)!==SCREE)trees.push(t)}}
+  for(let i=0;i<34;i++){let x=rnd(200,WORLD-200),y=rnd(200,WORLD-200);const a=Math.random()<.5?0:Math.PI/2,n=8+~~rnd(0,10);
+    for(let k=0;k<n;k++){const px=x+Math.cos(a)*k*34,py=y+Math.sin(a)*k*34;if(dry(px,py))posts.push({x:px,y:py,r:6})}}
+  // farm buildings sit beside the old roads
+  for(let i=0;i<400&&houses.length<18;i++){const x=rnd(300,WORLD-400),y=rnd(300,WORLD-400);
+    if(tt(x-30,y)===ROAD&&far(x,y,300)){const h={x:x,y:y,w:rnd(90,150),h:rnd(70,110),res:16};
+      if(dry(h.x+10,h.y+10)&&dry(h.x+h.w-10,h.y+h.h-10)&&tt(h.x+h.w/2,h.y+h.h/2)!==WATER)houses.push(h)}}
   const strays=[];
-  for(let i=0;i<26;i++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150);if(Math.hypot(cx-c,cy-c)<320){i--;continue}
-    const n=1+~~rnd(0,3);for(let k=0;k<n;k++)strays.push(mkSheep(cx+rnd(-40,40),cy+rnd(-40,40),Math.random()<.2))}
-  S={t:DAY*0.12,grass,rocks,posts,houses,strays,flock:[],preds:[],texts:[],
-    p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,wool:0,dash:0,dashCd:0,cast:0,grazing:false,bob:0},
-    spawnT:0,maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,lastDay:1};
+  for(let i=0;i<70;i++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150);if(!far(cx,cy,360)||tt(cx,cy)!==MEADOW){i--;continue}
+    const n=1+~~rnd(0,3);for(let k=0;k<n;k++){const sx=cx+rnd(-40,40),sy=cy+rnd(-40,40);if(tt(sx,sy)!==WATER)strays.push(mkSheep(sx,sy,Math.random()<.2))}}
+  S={t:DAY*0.12,terr,grass,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
+    folds:[],walls:[],decoys:[],traps:[],helm:false,
+    p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,dash:0,dashCd:0,cast:0,grazing:false,bob:0,still:0},
+    wool:0,wood:0,stone:0,bleatCd:0,orbit:0,circling:false,
+    spawnT:0,maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,circleShown:false,grazeShown:false,lastDay:1,shake:0};
+  mmx.fillStyle='#000';mmx.fillRect(0,0,COLS,COLS);
 }
-function mkSheep(x,y,ram){return{x,y,vx:0,vy:0,face:rnd(0,6.28),ram,fleece:rnd(2,6),wand:rnd(0,6.28),bob:rnd(0,9)}}
+function mkSheep(x,y,ram){return{x,y,vx:0,vy:0,face:rnd(0,6.28),ram,fleece:rnd(2,5),wand:rnd(0,6.28),bob:rnd(0,9),seen:0}}
 
 // ---------- input ----------
 const keys={};
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault()});
+let joy=null,grazeBtn=false,chargeReq=false,bleatReq=false,shearReq=false,craftReq=false;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
+  if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
-let joy=null,grazeBtn=false,chargeReq=false;
 cv.addEventListener('pointerdown',e=>{joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
 cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY}});
 const endJoy=e=>{if(joy&&e.pointerId===joy.id)joy=null};
 cv.addEventListener('pointerup',endJoy);cv.addEventListener('pointercancel',endJoy);
-const gb=document.getElementById('bGraze'),cb=document.getElementById('bCharge');
+const $=id=>document.getElementById(id);
+const gb=$('bGraze');
 gb.addEventListener('pointerdown',e=>{e.preventDefault();grazeBtn=true;gb.classList.add('on')});
 ['pointerup','pointerleave','pointercancel'].forEach(ev=>gb.addEventListener(ev,()=>{grazeBtn=false;gb.classList.remove('on')}));
-cb.addEventListener('pointerdown',e=>{e.preventDefault();chargeReq=true});
+$('bCharge').addEventListener('pointerdown',e=>{e.preventDefault();chargeReq=true});
+$('bBleat').addEventListener('pointerdown',e=>{e.preventDefault();bleatReq=true});
+$('bShear').addEventListener('pointerdown',e=>{e.preventDefault();shearReq=true});
+$('bCraft').addEventListener('click',()=>{craftReq=true});
 
 function inputVec(){
   let x=0,y=0;
@@ -105,138 +153,238 @@ function inputVec(){
 // ---------- helpers ----------
 const tileAt=(x,y)=>{const tx=clamp(~~(x/T),0,COLS-1),ty=clamp(~~(y/T),0,COLS-1);return ty*COLS+tx};
 function say(x,y,txt,col='#f4f2e6'){S.texts.push({x,y,txt,col,life:2.2})}
-let toastT=0;function toast(m,sec=3){const el=document.getElementById('toast');el.textContent=m;el.hidden=false;toastT=sec}
-const solids=()=>S.rocks.concat(S.posts);
+let toastT=0;function toast(m,sec=3.5){const el=$('toast');el.textContent=m;el.hidden=false;toastT=sec}
+const circles=()=>S.rocks.concat(S.trees,S.walls);
+function inHouse(o,h,rad){return o.x>h.x-rad&&o.x<h.x+h.w+rad&&o.y>h.y-rad&&o.y<h.y+h.h+rad}
 function collide(o,rad){
-  for(const r of S.rocks){const d=Math.hypot(o.x-r.x,o.y-r.y),m=r.r+rad;if(d<m&&d>0){o.x=r.x+(o.x-r.x)/d*m;o.y=r.y+(o.y-r.y)/d*m}}
-  for(const h of S.houses){if(o.x>h.x-rad&&o.x<h.x+h.w+rad&&o.y>h.y-rad&&o.y<h.y+h.h+rad){
+  for(const r of circles()){const d=Math.hypot(o.x-r.x,o.y-r.y),m=r.r+rad;if(d<m&&d>0){o.x=r.x+(o.x-r.x)/d*m;o.y=r.y+(o.y-r.y)/d*m}}
+  for(const h of S.houses){if(inHouse(o,h,rad)){
     const l=o.x-(h.x-rad),r=h.x+h.w+rad-o.x,t=o.y-(h.y-rad),b=h.y+h.h+rad-o.y,mn=Math.min(l,r,t,b);
     if(mn===l)o.x=h.x-rad;else if(mn===r)o.x=h.x+h.w+rad;else if(mn===t)o.y=h.y-rad;else o.y=h.y+h.h+rad}}
   o.x=clamp(o.x,rad,WORLD-rad);o.y=clamp(o.y,rad,WORLD-rad);
 }
 const phase=()=>(S.t%DAY)/DAY;
 const isNight=()=>phase()>NIGHT_START;
-function darkness(){const ph=phase();
-  if(ph<0.06)return 0.55*(1-ph/0.06); if(ph<NIGHT_START-0.06)return 0;
-  if(ph<NIGHT_START+0.02)return 0.75*(ph-(NIGHT_START-0.06))/0.08; return 0.75}
+// 0 = full day, 1 = full night
+function nightness(){const ph=phase();
+  if(ph<0.06)return 1-ph/0.06; if(ph<NIGHT_START-0.06)return 0;
+  if(ph<NIGHT_START+0.02)return (ph-(NIGHT_START-0.06))/0.08; return 1}
+const vision=()=>(VIS_DAY+(VIS_NIGHT-VIS_DAY)*nightness())*(S.p.grazing?0.7:1);
 function allSheep(){return [S.p,...S.flock]}
 function neighbours(s,r){let n=0;for(const o of allSheep())if(o!==s&&Math.hypot(o.x-s.x,o.y-s.y)<r)n++;return n}
 function rank(n){return n>=20?'Herd':n>=5?'Flock':'Stray'}
+const CIRCLE_MIN=4; // flockmates needed to circle Bramble
+
+function explore(){
+  const p=S.p,r=vision(),tr=Math.ceil(r/T);
+  const cx=~~(p.x/T),cy=~~(p.y/T);
+  for(let y=cy-tr;y<=cy+tr;y++)for(let x=cx-tr;x<=cx+tr;x++){
+    if(x<0||y<0||x>=COLS||y>=COLS)continue;const i=y*COLS+x;if(S.explored[i])continue;
+    if(Math.hypot((x+.5)*T-p.x,(y+.5)*T-p.y)<r){S.explored[i]=1;const g=S.grass[i],tr=S.terr[i];
+      mmx.fillStyle=tr===WATER?'#2c5470':tr===SCREE?'#7d7a6c':tr===BOG?'#3a422a':tr===ROAD?'#4a4a46':`rgb(${~~(90-g*45)},${~~(80+g*55)},${~~(50-g*15)})`;mmx.fillRect(x,y,1,1)}}
+}
+
+// charging into trees, buildings and big rocks
+function chargeHit(p){
+  for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+(S.helm?1:0));t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
+    if(t.res<=0){S.trees.splice(S.trees.indexOf(t),1);S.stumps.push({x:t.x,y:t.y});say(t.x,t.y-30,'Timber!','#c89a5c')}return}}
+  for(const r of S.rocks){if(r.big&&Math.hypot(p.x-r.x,p.y-r.y)<r.r+20){const g=Math.min(r.res,1+~~rnd(0,2)+(S.helm?1:0));r.res-=g;S.stone+=g;r.r=Math.max(12,r.r-3);bonk(p,r.x,r.y,`+${g} stone`,'#c9c6bb');
+    if(r.res<=0){S.rocks.splice(S.rocks.indexOf(r),1);S.rubble.push({x:r.x,y:r.y,w:22,h:22,stone:1})}return}}
+  for(const h of S.houses){if(inHouse(p,h,20)){const g=Math.min(h.res,2+~~rnd(0,2)+(S.helm?2:0));h.res-=g;S.wood+=g;bonk(p,h.x+h.w/2,h.y+h.h/2,`+${g} wood`,'#c89a5c');
+    if(h.res<=0){S.houses.splice(S.houses.indexOf(h),1);S.rubble.push(h);say(h.x+h.w/2,h.y,'The old barn comes down!','#c89a5c')}return}}
+}
+function bonk(p,x,y,txt,col){
+  p.dash=0;const a=Math.atan2(p.y-y,p.x-x);p.vx=Math.cos(a)*220;p.vy=Math.sin(a)*220;S.shake=0.25;say(p.x,p.y-34,txt,col);
+}
+
+const RECIPES=[
+  {id:'fold',kind:'Shelter',name:'Wool-lined Fold',cost:{wood:10,wool:6},text:'A ring of hurdles stuffed with fleece, built around you. Wolves can\'t get in, and sheep inside can graze in peace.'},
+  {id:'wall',kind:'Defence',name:'Drystone Baa-rier',cost:{stone:6},text:'A row of stones set across the way ahead of you. Nothing gets over it, wolf or sheep.'},
+  {id:'decoy',kind:'Defence',name:'Ewe-sual Suspect',cost:{wood:2,wool:4},text:'A fake sheep made of sticks and fleece. Wolves go for it first, and it takes them three bites to notice.'},
+  {id:'trap',kind:'Attack',name:'Dag Trap',cost:{wool:3,stone:1},text:'A heap of the mucky, matted wool from a sheep\'s back end. A wolf that steps in it is stuck fast, then gives up and leaves.'},
+  {id:'helm',kind:'Attack',name:'Ram-horn Helm',cost:{wood:4,stone:6},text:'Curled stone horns lashed on with wool. Charge twice as often, stun wolves for longer and break things faster.',once:true}];
+const canPay=c=>Object.entries(c).every(([k,v])=>S[k]>=v);
+const costText=c=>Object.entries(c).map(([k,v])=>`${v} ${k}`).join(' · ');
+function showCraft(){
+  card.innerHTML=`<div class="eb">Craft · you have ${~~S.wool} wool, ${S.wood} wood, ${S.stone} stone</div><h1>Flock <span>works</span></h1>
+  <div class="recipes">${RECIPES.map(r=>{const done=r.once&&S.helm,ok=canPay(r.cost)&&!done;
+    return `<div class="rec"><div><div class="rk">${r.kind}</div><b>${r.name}</b><p>${r.text}</p><div class="rc">${done?'Already wearing it':costText(r.cost)}</div></div>
+    <button type="button" data-id="${r.id}" ${ok?'':'disabled'}>Build</button></div>`}).join('')}</div>
+  <button id="close" type="button" class="ghost">Back to the field</button>`;
+  ov.hidden=false;
+  card.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{build(b.dataset.id);closeCraft()});
+  $('close').onclick=closeCraft;$('close').focus();
+}
+function closeCraft(){ov.hidden=true;last=performance.now()}
+function build(id){
+  const r=RECIPES.find(x=>x.id===id),p=S.p;if(!canPay(r.cost))return;
+  const fx=p.x+Math.cos(p.face)*60,fy=p.y+Math.sin(p.face)*60;
+  if(id!=='fold'&&id!=='helm'&&terrAt(fx,fy)===WATER){toast('You can\'t build on water.',2);return}
+  for(const[k,v]of Object.entries(r.cost))S[k]-=v;
+  if(id==='fold'){S.folds.push({x:p.x,y:p.y,r:90});say(p.x,p.y-40,'A safe fold!','#9cbf6a')}
+  else if(id==='wall'){const a=p.face+Math.PI/2;for(let k=-3;k<3;k++){const x=fx+Math.cos(a)*(k+0.5)*24,y=fy+Math.sin(a)*(k+0.5)*24;if(terrAt(x,y)!==WATER)S.walls.push({x,y,r:12})}say(fx,fy-24,'Stone on stone.','#c9c6bb')}
+  else if(id==='decoy'){S.decoys.push({x:fx,y:fy,hp:3,decoy:true});say(fx,fy-24,'Baa? (it says nothing)','#e0835a')}
+  else if(id==='trap'){S.traps.push({x:fx,y:fy});say(fx,fy-24,'Lovely.','#c89a5c')}
+  else if(id==='helm'){S.helm=true;say(p.x,p.y-40,'Horns on!','#e6b422')}
+}
+function bleat(){
+  const p=S.p;S.bleatCd=4;S.pings.push({x:p.x,y:p.y,t:0});say(p.x,p.y-34,'BAAAAA!','#e6b422');
+  let found=0;
+  for(const s of S.strays){const d=Math.hypot(s.x-p.x,s.y-p.y);if(d<BLEAT_RANGE){s.seen=3.5;found++;
+    setTimeout(()=>{if(S.strays.includes(s))say(s.x,s.y-24,['Baa!','Over here!','Meh?','Baaa!'][~~rnd(0,4)],'#cfe0ff')},300+d*1.2)}}
+  if(!found)toast('No answer. No sheep within earshot.',2);
+  // bleating at night carries, and something hears it
+  if(isNight())S.spawnT-=2.5;
+}
+function shear(){
+  const p=S.p;let got=0,n=0;
+  for(const s of S.flock){if(s.fleece>=4&&Math.hypot(s.x-p.x,s.y-p.y)<110){const w=s.fleece-1.5;got+=w;n++;s.fleece=1.5;say(s.x,s.y-22,'snip','#f4f2e6')}}
+  if(n){S.wool+=got;say(p.x,p.y-34,`+${got.toFixed(1)} wool`,'#f4f2e6')}
+  else toast(S.flock.length?'No fleece is ready yet. Fleeces are ready at 4 kg (shown by a yellow dot).':'You need a flock to shear.',2.5);
+}
 
 // ---------- update ----------
 function update(dt){
   S.t+=dt;const p=S.p;
   const day=1+Math.floor(S.t/DAY);
-  if(day!==S.lastDay){S.lastDay=day;S.day=day;toast(`Dawn, day ${day}. The predators slink off.`)}
+  if(day!==S.lastDay){S.lastDay=day;S.day=day;toast(`Dawn, day ${day}. The wolves slink off.`)}
+  explore();
   // player
   const iv=inputVec();
   const heavy=Math.max(0,p.fleece-4);
   let spd=150*(1-Math.min(0.55,heavy*0.075));
   p.grazing=(keys[' ']||keys['g']||grazeBtn)&&p.cast<=0;
   if(p.cast>0){p.cast-=dt;if(neighbours(p,55)>0)p.cast-=dt*2;if(p.cast<=0)say(p.x,p.y-30,'Back on my feet!');}
-  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=2.6;say(p.x,p.y-30,'Baaa!','#e6b422')}
-  chargeReq=false;
-  p.dashCd-=dt;
+  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=S.helm?1.1:2.2;say(p.x,p.y-30,'Baaa!','#e6b422')}
+  chargeReq=false;p.dashCd-=dt;
+  S.bleatCd-=dt;if(bleatReq&&S.bleatCd<=0)bleat();bleatReq=false;
+  if(shearReq)shear();shearReq=false;
+  if(craftReq){craftReq=false;showCraft();return}
   let mx=iv.x,my=iv.y;
   if(p.cast>0||p.grazing){mx=0;my=0}
   if(p.dash>0){p.dash-=dt;spd*=3;if(mx===0&&my===0){mx=Math.cos(p.face);my=Math.sin(p.face)}}
   p.vx+=(mx*spd-p.vx)*Math.min(1,dt*10);p.vy+=(my*spd-p.vy)*Math.min(1,dt*10);
-  p.x+=p.vx*dt;p.y+=p.vy*dt;
-  const moving=Math.hypot(p.vx,p.vy)>20;
-  if(moving){p.face=Math.atan2(p.vy,p.vx);p.bob+=dt*12}
-  // rubbing on rocks/posts sheds fleece
+  moveBy(p,dt);
+  const moving=Math.hypot(p.vx,p.vy)>40;
+  if(moving){p.face=Math.atan2(p.vy,p.vx);p.bob+=dt*12;p.still=0}else p.still+=dt;
+  if(p.dash>0)chargeHit(p);
+  // rubbing on rocks and posts sheds Bramble's own fleece
   let rubbing=false;
-  for(const r of solids()){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16&&moving){rubbing=true;break}}
+  if(moving&&p.dash<=0){for(const r of S.rocks.concat(S.posts)){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16){rubbing=true;break}}}
   collide(p,14);
-  if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;p.wool+=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
+  if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;S.wool+=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
   p.fleece+=dt*0.035;
-  // getting cast
-  if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, Bramble has rolled onto her back. A flockmate nearby helps her up faster.')}
-  // hunger & grazing
-  p.hunger-=dt*(1.05+heavy*0.08);
-  if(p.grazing){const i=tileAt(p.x,p.y),g=S.grass[i];if(g>0.05){const e=Math.min(g,dt*0.5);S.grass[i]-=e;p.hunger+=e*55}}
+  if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Bramble has rolled onto her back. A flockmate nearby helps her up faster.')}
+  // hunger and grazing
+  p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.004);
+  if(p.grazing){const i=tileAt(p.x,p.y),g=S.grass[i];if(g>0.05){const e=Math.min(g,dt*0.22);S.grass[i]-=e;p.hunger+=e*26}
+    if(isNight()&&!S.grazeShown&&!inFold(p)){S.grazeShown=true;toast('Heads down. While the flock grazes it spreads out and can\'t see the wolves coming.')}}
   p.hunger=clamp(p.hunger,0,100);
   if(p.hunger<=0)p.health-=dt*6;else if(p.hunger>50)p.health+=dt*1.2;
   p.health=Math.min(100,p.health);
-  // grass regrows slowly
-  for(let i=0;i<S.grass.length;i++)if(S.grass[i]<1)S.grass[i]=Math.min(1,S.grass[i]+dt*0.006);
+  for(let i=0;i<S.grass.length;i++)if(S.grass[i]<1&&S.terr[i]===MEADOW)S.grass[i]=Math.min(1,S.grass[i]+dt*0.004);
 
   // strays wander and join
-  for(let i=S.strays.length-1;i>=0;i--){const s=S.strays[i];
+  for(let i=S.strays.length-1;i>=0;i--){const s=S.strays[i];s.seen-=dt;
     s.wand+=rnd(-1,1)*dt;const sp=Math.random()<0.5?14:0;
-    s.vx=Math.cos(s.wand)*sp;s.vy=Math.sin(s.wand)*sp;s.x+=s.vx*dt;s.y+=s.vy*dt;if(sp)s.face=s.wand;collide(s,12);
+    s.vx=Math.cos(s.wand)*sp;s.vy=Math.sin(s.wand)*sp;moveBy(s,dt);if(sp)s.face=s.wand;collide(s,12);
+    s.fleece+=dt*0.01;
     if(Math.hypot(s.x-p.x,s.y-p.y)<75){S.strays.splice(i,1);S.flock.push(s);
       say(s.x,s.y-26,s.ram?'A ram joins you!':['Baa?','Take me with you!','Where are the humans?','Mehh!'][~~rnd(0,4)],s.ram?'#e6b422':'#f4f2e6')}}
-  // flock boids
+
+  // flock: follow Bramble, and circle her while she keeps moving
   const fl=S.flock;
-  for(const s of fl){
+  S.circling=fl.length>=CIRCLE_MIN&&p.still<0.6&&p.cast<=0;
+  if(S.circling&&!S.circleShown&&isNight()){S.circleShown=true;toast('The flock circles Bramble while she moves. Wolves won\'t break a moving circle.')}
+  S.orbit+=dt*(S.circling?1.6:0);
+  const R=44+Math.sqrt(fl.length)*11;
+  fl.forEach((s,idx)=>{
     let ax=0,ay=0;const dx=p.x-s.x,dy=p.y-s.y,d=Math.hypot(dx,dy)||1;
-    const want=40+Math.sqrt(fl.length)*14;
-    if(d>want){ax+=dx/d*(d-want)*5}
-    for(const o of fl){if(o===s)continue;const ox=s.x-o.x,oy=s.y-o.y,od=Math.hypot(ox,oy);if(od<26&&od>0){ax+=ox/od*(26-od)*9;ay+=oy/od*(26-od)*9}}
+    if(S.circling){
+      const a=S.orbit+idx/fl.length*Math.PI*2,tx=p.x+p.vx*0.25+Math.cos(a)*R,ty=p.y+p.vy*0.25+Math.sin(a)*R;
+      ax+=(tx-s.x)*9;ay+=(ty-s.y)*9;
+    }else{
+      const want=(40+Math.sqrt(fl.length)*14)*(p.grazing?1.9:1)*(inFold(p)?0.6:1);
+      if(d>want){ax+=dx/d*(d-want)*5;ay+=dy/d*(d-want)*5}
+    }
+    for(const o of fl){if(o===s)continue;const ox=s.x-o.x,oy=s.y-o.y,od=Math.hypot(ox,oy);if(od<24&&od>0){ax+=ox/od*(24-od)*9;ay+=oy/od*(24-od)*9}}
     const pd=Math.hypot(s.x-p.x,s.y-p.y);if(pd<30&&pd>0){ax+=(s.x-p.x)/pd*(30-pd)*9;ay+=(s.y-p.y)/pd*(30-pd)*9}
-    ay+=dy/d*(d>want?(d-want)*5:0);
-    for(const w of S.preds){const wd=Math.hypot(s.x-w.x,s.y-w.y);if(wd<140&&wd>0){ax+=(s.x-w.x)/wd*120;ay+=(s.y-w.y)/wd*120}}
+    if(!S.circling&&!p.grazing)for(const w of S.preds){const wd=Math.hypot(s.x-w.x,s.y-w.y);if(wd<140&&wd>0){ax+=(s.x-w.x)/wd*120;ay+=(s.y-w.y)/wd*120}}
     s.vx+=ax*dt;s.vy+=ay*dt;s.vx*=Math.pow(0.12,dt);s.vy*=Math.pow(0.12,dt);
-    const v=Math.hypot(s.vx,s.vy),max=s.ram&&s.charge>0?420:205;if(v>max){s.vx*=max/v;s.vy*=max/v}
-    s.x+=s.vx*dt;s.y+=s.vy*dt;if(v>15){s.face=Math.atan2(s.vy,s.vx);s.bob+=dt*12}
+    const v=Math.hypot(s.vx,s.vy),max=s.charge>0?420:(S.circling?280:205)*(1-Math.max(0,s.fleece-5)*0.06);if(v>max){s.vx*=max/v;s.vy*=max/v}
+    moveBy(s,dt);if(v>15){s.face=Math.atan2(s.vy,s.vx);s.bob+=dt*12}
     collide(s,12);
     if(v<20){const i=tileAt(s.x,s.y);S.grass[i]=Math.max(0,S.grass[i]-dt*0.05)}
-    // rams charge alongside Bramble
+    s.fleece=Math.min(9,s.fleece+dt*0.03);
     if(s.ram&&p.dash>0.2&&!s.charge){const t=nearestPred(s,260);if(t){s.charge=0.5;const a=Math.atan2(t.y-s.y,t.x-s.x);s.vx=Math.cos(a)*420;s.vy=Math.sin(a)*420}}
     if(s.charge>0){s.charge-=dt;if(s.charge<=0)s.charge=0}
-  }
+  });
   S.maxFlock=Math.max(S.maxFlock,fl.length+1);
 
-  // predators
+  // wolves
   if(isNight()){S.spawnT-=dt;const cap=2+S.day*2;
     if(S.spawnT<=0&&S.preds.length<cap){S.spawnT=Math.max(2.5,8-S.day);
-      const a=rnd(0,6.28),r=rnd(560,700);const w={x:clamp(p.x+Math.cos(a)*r,20,WORLD-20),y:clamp(p.y+Math.sin(a)*r,20,WORLD-20),vx:0,vy:0,state:'hunt',st:0,face:0,fox:S.day===1&&Math.random()<.5};
-      S.preds.push(w);if(S.preds.length===1)toast(w.fox?'Something is moving in the dark.':'Eyes in the dark. Keep the flock close.')}}
-  for(let i=S.preds.length-1;i>=0;i--){const w=S.preds[i];w.st-=dt;
+      const a=rnd(0,6.28),r=rnd(480,620);const w={x:clamp(p.x+Math.cos(a)*r,20,WORLD-20),y:clamp(p.y+Math.sin(a)*r,20,WORLD-20),vx:0,vy:0,state:'hunt',st:0,face:0,orb:rnd(0,6.28),bite:0};
+      S.preds.push(w);if(S.preds.length===1)toast('Eyes in the dark. Keep moving, and keep the flock close.')}}
+  const protectedNow=S.circling;
+  for(let i=S.preds.length-1;i>=0;i--){const w=S.preds[i];w.st-=dt;w.bite-=dt;
     if(!isNight()&&w.state!=='flee'){w.state='flee';w.st=99}
-    if(w.state!=='hunt'&&w.st<=0&&isNight())w.state='hunt';
-    let tx=0,ty=0,sp=0;
+    if((w.state==='stun'||w.state==='stuck')&&w.st<=0){w.state='flee';w.st=5}
+    for(const tr of S.traps){if(w.state!=='stuck'&&Math.hypot(w.x-tr.x,w.y-tr.y)<22){w.state='stuck';w.st=5;w.vx=w.vy=0;S.traps.splice(S.traps.indexOf(tr),1);say(w.x,w.y-24,'Dag trap! The wolf is stuck fast.','#c89a5c');break}}
+    if(w.state==='flee'&&w.st<=0&&isNight())w.state='hunt';
+    let tx=0,ty=0,sp=0;const pdist=Math.hypot(w.x-p.x,w.y-p.y)||1;
     if(w.state==='stun'){sp=0}
-    else if(w.state==='flee'){const a=Math.atan2(w.y-p.y,w.x-p.x);tx=Math.cos(a);ty=Math.sin(a);sp=170}
+    else if(w.state==='flee'){tx=(w.x-p.x)/pdist;ty=(w.y-p.y)/pdist;sp=170}
+    else if(w.state==='stuck'){sp=0}
     else{
-      // pick the most isolated nearby sheep
-      let best=null,bs=1e9;for(const s of allSheep()){const d=Math.hypot(s.x-w.x,s.y-w.y);const sc=d*(1+neighbours(s,110)*0.35);if(sc<bs){bs=sc;best=s}}
-      if(best){const d=Math.hypot(best.x-w.x,best.y-w.y)||1;tx=(best.x-w.x)/d;ty=(best.y-w.y)/d;sp=w.fox?118:132+S.day*4;
-        if(d<120&&neighbours(best,110)>=4){w.state='flee';w.st=5;say(w.x,w.y-24,'The ring holds!','#9cbf6a')}
-        else if(d<18){
-          if(best===p){if(p.dash<=0){p.health-=w.fox?18:30;say(p.x,p.y-30,'Ouch!','#e05a4a');w.state='flee';w.st=3}}
-          else{S.flock.splice(S.flock.indexOf(best),1);say(best.x,best.y-20,'A flockmate is taken.','#e05a4a');w.state='flee';w.st=8}
+      // pick a target: decoys first, then the most isolated sheep outside a fold
+      let best=null,bs=1e9;
+      for(const dc of S.decoys){const d=Math.hypot(dc.x-w.x,dc.y-w.y);if(d<500&&d*0.5<bs){bs=d*0.5;best=dc}}
+      for(const s of allSheep()){if(inFold(s))continue;const d=Math.hypot(s.x-w.x,s.y-w.y);const sc=d*(1+neighbours(s,90)*0.15);if(sc<bs){bs=sc;best=s}}
+      if((protectedNow&&pdist<420&&!(best&&best.decoy))||!best){
+        // a moving circle (or a closed fold): wolves pace around, waiting
+        w.orb+=dt*0.7;const fd=S.folds.find(f=>Math.hypot(p.x-f.x,p.y-f.y)<f.r),ox=fd?fd.x:p.x,oy=fd?fd.y:p.y,orR=(fd?fd.r:R)+110;
+        const gx=ox+Math.cos(w.orb)*orR,gy=oy+Math.sin(w.orb)*orR,gd=Math.hypot(gx-w.x,gy-w.y)||1;
+        tx=(gx-w.x)/gd;ty=(gy-w.y)/gd;sp=Math.min(190,gd*3);
+      }else{const d=Math.hypot(best.x-w.x,best.y-w.y)||1;tx=(best.x-w.x)/d;ty=(best.y-w.y)/d;sp=(140+S.day*5)*(p.grazing?1.2:1);
+        if(d<18&&w.bite<=0){
+          if(best.decoy){best.hp--;w.bite=1;w.state='flee';w.st=3;say(best.x,best.y-22,best.hp>0?'Chomp... that tasted odd.':'The decoy falls apart. Just sticks and wool.','#e0835a');
+            if(best.hp<=0)S.decoys.splice(S.decoys.indexOf(best),1)}
+          else if(best===p){if(p.dash<=0){p.health-=25;say(p.x,p.y-30,'Ouch!','#e05a4a');w.bite=1.5;w.state='flee';w.st=1.5}}
+          else{S.flock.splice(S.flock.indexOf(best),1);say(best.x,best.y-20,'A flockmate is taken!','#e05a4a');w.state='flee';w.st=6}
         }}
     }
     w.vx+=(tx*sp-w.vx)*Math.min(1,dt*4);w.vy+=(ty*sp-w.vy)*Math.min(1,dt*4);
-    w.x+=w.vx*dt;w.y+=w.vy*dt;if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,12);
-    // charge hits
-    const hitters=[p,...S.flock.filter(s=>s.charge>0)];
-    for(const h of hitters){if((h===p?p.dash>0:true)&&Math.hypot(h.x-w.x,h.y-w.y)<34&&w.state!=='stun'){
-      const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=1.2;
-      setTimeout(()=>{if(w.state==='stun'){w.state='flee';w.st=6}},1200);say(w.x,w.y-24,'Headbutt!','#e6b422')}}
-    if(w.state==='flee'&&Math.hypot(w.x-p.x,w.y-p.y)>950)S.preds.splice(i,1);
+    moveBy(w,dt);
+    for(const f of S.folds){const d=Math.hypot(w.x-f.x,w.y-f.y);if(d<f.r+14&&d>0){w.x=f.x+(w.x-f.x)/d*(f.r+14);w.y=f.y+(w.y-f.y)/d*(f.r+14)}}if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,12);
+    for(const h of [p,...S.flock.filter(s=>s.charge>0)]){if((h===p?p.dash>0:true)&&Math.hypot(h.x-w.x,h.y-w.y)<34&&w.state!=='stun'){
+      const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=S.helm?2.4:1.2;say(w.x,w.y-24,'Headbutt!','#e6b422')}}
+    if(w.state==='flee'&&pdist>950)S.preds.splice(i,1);
   }
-  // texts
   for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];t.life-=dt;t.y-=dt*14;if(t.life<=0)S.texts.splice(i,1)}
-  // milestones
+  for(let i=S.pings.length-1;i>=0;i--){S.pings[i].t+=dt;if(S.pings[i].t>1.4)S.pings.splice(i,1)}
+  S.shake=Math.max(0,S.shake-dt);
   const n=fl.length+1;
-  if(n>=5&&!S.flockShown){S.flockShown=true;toast('Rank up: Flock. Keep five or more together and predators break off.',4)}
+  if(n>=5&&!S.flockShown){S.flockShown=true;toast('Rank up: Flock. While you keep moving, they circle you and the wolves hold back.',4.5)}
   if(n>=20&&!S.herdShown){S.herdShown=true;toast('Rank up: Herd. The valley is starting to belong to the sheep.',5)}
   if(p.health<=0){S.over=true;S.running=false;showOver()}
-  if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').hidden=true}
+  if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true}
 }
+const terrAt=(x,y)=>S.terr[tileAt(x,y)];
+const TERR_SPEED=[1,0.85,0.5,1,1.15];
+function moveBy(o,dt){const f=TERR_SPEED[terrAt(o.x,o.y)];
+  const nx=o.x+o.vx*dt*f;if(terrAt(nx,o.y)!==WATER)o.x=nx;else o.vx*=-0.2;
+  const ny=o.y+o.vy*dt*f;if(terrAt(o.x,ny)!==WATER)o.y=ny;else o.vy*=-0.2}
+function inFold(o){return S.folds.some(f=>Math.hypot(o.x-f.x,o.y-f.y)<f.r)}
 function nearestPred(s,r){let b=null,bd=r;for(const w of S.preds){const d=Math.hypot(w.x-s.x,w.y-s.y);if(d<bd){bd=d;b=w}}return b}
 
 // ---------- draw ----------
-function drawSheep(s,isP,camx,camy){
+function drawSheep(s,isP,camx,camy,ghost){
   const x=s.x-camx,y=s.y-camy,f=s.fleece||2,r=10+f*1.3,cast=isP&&s.cast>0;
-  ctx.save();ctx.translate(x,y);
+  ctx.save();ctx.translate(x,y);if(ghost)ctx.globalAlpha=0.55;
   ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(2,4,r+3,r*0.8,0,0,7);ctx.fill();
   ctx.rotate(s.face+(cast?Math.PI/2:0));
   const b=Math.sin(s.bob||0)*1.2;
-  // legs when cast
   if(cast){ctx.strokeStyle='#2a2622';ctx.lineWidth=3;for(const k of[-1,1])for(const j of[-1,1]){ctx.beginPath();ctx.moveTo(k*6,j*6);ctx.lineTo(k*9,j*(r+6));ctx.stroke()}}
   ctx.fillStyle=isP?'#fbf8ec':'#ece7d6';
   for(let k=0;k<7;k++){const a=k/7*6.28;ctx.beginPath();ctx.arc(Math.cos(a)*r*0.45-2,Math.sin(a)*r*0.4,r*0.62,0,7);ctx.fill()}
@@ -246,98 +394,150 @@ function drawSheep(s,isP,camx,camy){
   ctx.fillStyle='#2a2622';for(const k of[-1,1]){ctx.beginPath();ctx.ellipse(r-1+b,k*7,3.5,2,k*0.6,0,7);ctx.fill()}
   if(isP){ctx.fillStyle='#e6b422';ctx.fillRect(r-3+b,-10,5,4)}
   ctx.restore();
+  // fleece ready to shear
+  if(!isP&&!ghost&&S.flock.includes(s)&&s.fleece>=4){ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(x,y-r-6,3,0,7);ctx.fill()}
 }
 function drawPred(w,camx,camy){
   ctx.save();ctx.translate(w.x-camx,w.y-camy);ctx.rotate(w.face);
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(2,4,20,9,0,0,7);ctx.fill();
-  ctx.fillStyle=w.fox?'#c2622e':'#6e6a66';ctx.beginPath();ctx.ellipse(0,0,18,8,0,0,7);ctx.fill();
+  ctx.fillStyle='#6e6a66';ctx.beginPath();ctx.ellipse(0,0,18,8,0,0,7);ctx.fill();
   ctx.beginPath();ctx.ellipse(-20,0,10,3.5,0,0,7);ctx.fill();
   ctx.beginPath();ctx.moveTo(14,-6);ctx.lineTo(28,0);ctx.lineTo(14,6);ctx.fill();
-  ctx.fillStyle=w.state==='stun'?'#9cbf6a':'#ffd36a';ctx.beginPath();ctx.arc(20,-3,1.8,0,7);ctx.arc(20,3,1.8,0,7);ctx.fill();
+  ctx.fillStyle=w.state==='stun'||w.state==='stuck'?'#9cbf6a':'#ffd36a';ctx.beginPath();ctx.arc(20,-3,1.8,0,7);ctx.arc(20,3,1.8,0,7);ctx.fill();
   ctx.restore();
 }
+function tileColor(tr,g,tx,ty){const v=((tx*13+ty*7)%5)*3;
+  if(tr===SCREE)return `rgb(${128+v},${124+v},${110+v})`;if(tr===BOG)return `rgb(${58+v},${66+v},${42})`;
+  if(tr===WATER)return `rgb(${40},${84+v},${112+v})`;if(tr===ROAD)return `rgb(${70+v},${70+v},${68+v})`;
+  return `rgb(${~~(120-g*62)},${~~(98+g*62)},${~~(62-g*22)})`}
+function terrDetail(tr,x,y,tx,ty){const h=(tx*31+ty*17)%29;
+  if(tr===SCREE){ctx.fillStyle='rgba(70,68,60,.45)';ctx.fillRect(x+h,y+(h*3)%34,5,4);ctx.fillRect(x+(h*7)%34,y+h,3,3)}
+  else if(tr===BOG){ctx.fillStyle='rgba(60,90,110,.5)';ctx.beginPath();ctx.ellipse(x+10+h%20,y+12+(h*5)%18,8,4,0,0,7);ctx.fill()}
+  else if(tr===WATER){ctx.strokeStyle='rgba(180,210,230,.18)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x+h,y+20);ctx.lineTo(x+h+9,y+20);ctx.stroke()}
+  else if(tr===ROAD){ctx.strokeStyle='rgba(30,30,28,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+h,y);ctx.lineTo(x+h+6,y+14);ctx.lineTo(x+h+2,y+26);ctx.stroke();
+    if(h%3===0){ctx.fillStyle='rgba(110,150,70,.6)';ctx.fillRect(x+(h*3)%30,y+(h*5)%30,4,3)}}}
+const onScreen=(x,y,m)=>x>-m&&y>-m&&x<vw+m&&y<vh+m;
 function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  const p=S.p,camx=p.x-vw/2,camy=p.y-vh/2;
-  ctx.fillStyle='#14190f';ctx.fillRect(0,0,vw,vh);
+  const p=S.p,sh=S.shake>0?rnd(-4,4):0,camx=p.x-vw/2+sh,camy=p.y-vh/2+sh;
+  const vr=vision(),nt=nightness();
+  const seen=(o,pad=0)=>Math.hypot(o.x-p.x,o.y-p.y)<vr+pad;
+  ctx.fillStyle='#05070a';ctx.fillRect(0,0,vw,vh);
   const x0=Math.max(0,~~(camx/T)),y0=Math.max(0,~~(camy/T)),x1=Math.min(COLS-1,~~((camx+vw)/T)),y1=Math.min(COLS-1,~~((camy+vh)/T));
-  for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const g=S.grass[ty*COLS+tx];
-    const r=~~(120-g*62),gg=~~(98+g*62),b=~~(62-g*22);ctx.fillStyle=`rgb(${r},${gg},${b})`;ctx.fillRect(tx*T-camx,ty*T-camy,T+1,T+1);
+  for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const i=ty*COLS+tx;if(!S.explored[i])continue;const g=S.grass[i];
+    const tr=S.terr[i],sx=tx*T-camx,sy=ty*T-camy;ctx.fillStyle=tileColor(tr,g,tx,ty);ctx.fillRect(sx,sy,T+1,T+1);
+    if(tr!==MEADOW){terrDetail(tr,sx,sy,tx,ty);continue}
     if(g>0.7&&((tx*7+ty*13)%5===0)){ctx.fillStyle='rgba(240,230,150,.5)';ctx.fillRect(tx*T-camx+((tx*31)%30),ty*T-camy+((ty*17)%30),3,3)}}
-  // world edge
-  ctx.strokeStyle='#3b2f22';ctx.lineWidth=8;ctx.strokeRect(-camx,-camy,WORLD,WORLD);
-  for(const h of S.houses){const x=h.x-camx,y=h.y-camy;if(x>vw||y>vh||x+h.w<0||y+h.h<0)continue;
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+6,y+8,h.w,h.h);ctx.fillStyle='#7d4a37';ctx.fillRect(x,y,h.w,h.h);
+  const known=o=>S.explored[tileAt(o.x,o.y)];
+  for(const h of S.rubble){const x=h.x-camx,y=h.y-camy;if(!known(h)||!onScreen(x,y,160))continue;
+    ctx.fillStyle=h.stone?'#77756c':'#5a3a2c';for(let k=0;k<6;k++){ctx.fillRect(x+((k*37)%h.w),y+((k*23)%h.h),12,8)}}
+  for(const s of S.stumps){const x=s.x-camx,y=s.y-camy;if(!known(s)||!onScreen(x,y,20))continue;ctx.fillStyle='#6b4c30';ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();ctx.fillStyle='#a07a50';ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill()}
+  for(const h of S.houses){const x=h.x-camx,y=h.y-camy;if(!known(h)&&!known({x:h.x+h.w,y:h.y+h.h}))continue;if(x>vw||y>vh||x+h.w<0||y+h.h<0)continue;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+6,y+8,h.w,h.h);ctx.fillStyle=h.res<8?'#6a3f30':'#7d4a37';ctx.fillRect(x,y,h.w,h.h);
     ctx.strokeStyle='#5c3326';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y+h.h/2);ctx.lineTo(x+h.w,y+h.h/2);ctx.stroke();
+    if(h.res<8){ctx.fillStyle='#2a1a14';ctx.fillRect(x+h.w*0.3,y+h.h*0.2,h.w*0.25,h.h*0.3)}
     ctx.fillStyle='rgba(120,150,70,.55)';ctx.beginPath();ctx.arc(x+h.w*0.8,y+h.h*0.25,14,0,7);ctx.arc(x+h.w*0.15,y+h.h*0.8,10,0,7);ctx.fill()}
-  for(const r of S.posts){const x=r.x-camx,y=r.y-camy;if(x<-20||y<-20||x>vw+20||y>vh+20)continue;ctx.fillStyle='#6b4c30';ctx.fillRect(x-4,y-4,8,8)}
+  for(const r of S.posts){const x=r.x-camx,y=r.y-camy;if(!known(r)||!onScreen(x,y,20))continue;ctx.fillStyle='#6b4c30';ctx.fillRect(x-4,y-4,8,8)}
   ctx.strokeStyle='rgba(150,150,140,.6)';ctx.lineWidth=1;
-  for(let i=1;i<S.posts.length;i++){const a=S.posts[i-1],b=S.posts[i];if(Math.hypot(a.x-b.x,a.y-b.y)<40){ctx.beginPath();ctx.moveTo(a.x-camx,a.y-camy);ctx.lineTo(b.x-camx,b.y-camy);ctx.stroke()}}
-  for(const r of S.rocks){const x=r.x-camx,y=r.y-camy;if(x<-40||y<-40||x>vw+40||y>vh+40)continue;
+  for(let i=1;i<S.posts.length;i++){const a=S.posts[i-1],b=S.posts[i];if(known(a)&&known(b)&&Math.hypot(a.x-b.x,a.y-b.y)<40){ctx.beginPath();ctx.moveTo(a.x-camx,a.y-camy);ctx.lineTo(b.x-camx,b.y-camy);ctx.stroke()}}
+  for(const r of S.rocks){const x=r.x-camx,y=r.y-camy;if(!known(r)||!onScreen(x,y,40))continue;
     ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(x+3,y+4,r.r,0,7);ctx.fill();
-    ctx.fillStyle='#8c8a80';ctx.beginPath();ctx.arc(x,y,r.r,0,7);ctx.fill();ctx.fillStyle='#a6a498';ctx.beginPath();ctx.arc(x-r.r*0.3,y-r.r*0.3,r.r*0.5,0,7);ctx.fill()}
-  // ring indicator
-  const nb=neighbours(p,110);if(nb>=4){ctx.strokeStyle='rgba(156,191,106,.5)';ctx.setLineDash([6,8]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(vw/2,vh/2,110,0,7);ctx.stroke();ctx.setLineDash([])}
-  for(const s of S.strays)drawSheep(s,false,camx,camy);
+    ctx.fillStyle=r.big?'#7f7d74':'#8c8a80';ctx.beginPath();ctx.arc(x,y,r.r,0,7);ctx.fill();ctx.fillStyle='#a6a498';ctx.beginPath();ctx.arc(x-r.r*0.3,y-r.r*0.3,r.r*0.5,0,7);ctx.fill();
+    if(r.big){ctx.strokeStyle='rgba(40,40,36,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-r.r*0.5,y+r.r*0.1);ctx.lineTo(x+r.r*0.2,y+r.r*0.4);ctx.stroke()}}
+  for(const t of S.trees){const x=t.x-camx,y=t.y-camy;if(!known(t)||!onScreen(x,y,40))continue;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(x+5,y+6,t.r,0,7);ctx.fill();
+    ctx.fillStyle='#2f5a24';ctx.beginPath();ctx.arc(x,y,t.r,0,7);ctx.fill();
+    ctx.fillStyle='#3e7230';ctx.beginPath();ctx.arc(x-t.r*0.25,y-t.r*0.25,t.r*0.62,0,7);ctx.fill()}
+  for(const f of S.folds){const x=f.x-camx,y=f.y-camy;if(!onScreen(x,y,f.r+20))continue;
+    ctx.strokeStyle='#7a5634';ctx.lineWidth=7;ctx.setLineDash([22,5]);ctx.beginPath();ctx.arc(x,y,f.r,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#efe9d6';for(let k=0;k<16;k++){const a=k/16*6.28;ctx.beginPath();ctx.arc(x+Math.cos(a)*f.r,y+Math.sin(a)*f.r,3.5,0,7);ctx.fill()}}
+  for(const w of S.walls){const x=w.x-camx,y=w.y-camy;if(!onScreen(x,y,20))continue;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(x+2,y+3,w.r,0,7);ctx.fill();
+    ctx.fillStyle='#9a978a';ctx.beginPath();ctx.arc(x,y,w.r,0,7);ctx.fill();ctx.fillStyle='#b4b1a4';ctx.beginPath();ctx.arc(x-3,y-3,w.r*0.45,0,7);ctx.fill()}
+  for(const tr of S.traps){const x=tr.x-camx,y=tr.y-camy;if(!onScreen(x,y,20))continue;ctx.fillStyle='#5c4326';ctx.beginPath();ctx.ellipse(x,y,15,10,0.3,0,7);ctx.fill();
+    ctx.fillStyle='#8a7048';for(let k=0;k<5;k++){ctx.beginPath();ctx.arc(x-9+k*4.5,y+((k*7)%6)-3,3,0,7);ctx.fill()}}
+  for(const dc of S.decoys){const x=dc.x-camx,y=dc.y-camy;if(!onScreen(x,y,30))continue;
+    ctx.strokeStyle='#6b4c30';ctx.lineWidth=2.5;for(const k of[-6,6])for(const j of[-7,7]){ctx.beginPath();ctx.moveTo(x+k,y);ctx.lineTo(x+k*1.4,y+j*1.6);ctx.stroke()}
+    ctx.fillStyle='#d9d2bb';ctx.beginPath();ctx.ellipse(x,y,15,11,0,0,7);ctx.fill();ctx.fillStyle='#6b4c30';ctx.fillRect(x+12,y-4,9,7);
+    ctx.fillStyle='#2a2622';ctx.fillRect(x+16,y-2,2,2)}
+  // living things only where Bramble can actually see
+  for(const s of S.strays)if(seen(s,10))drawSheep(s,false,camx,camy);
   for(const s of S.flock)drawSheep(s,false,camx,camy);
   drawSheep(p,true,camx,camy);
-  for(const w of S.preds)drawPred(w,camx,camy);
-  // night
-  const dk=darkness();
-  if(dk>0){const g=ctx.createRadialGradient(vw/2,vh/2,60,vw/2,vh/2,Math.max(vw,vh)*0.6);
-    g.addColorStop(0,`rgba(8,12,30,${dk*0.45})`);g.addColorStop(1,`rgba(8,12,30,${Math.min(0.92,dk*1.35)})`);ctx.fillStyle=g;ctx.fillRect(0,0,vw,vh);
-    for(const w of S.preds){const x=w.x-camx,y=w.y-camy;ctx.fillStyle='#ffd36a';ctx.beginPath();ctx.arc(x+Math.cos(w.face)*20,y+Math.sin(w.face)*20,2.2,0,7);ctx.fill()}}
-  // grazing hint
-  if(p.grazing){ctx.fillStyle='rgba(244,242,230,.85)';ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.fillText(S.grass[tileAt(p.x,p.y)]>0.05?'munch':'bare ground, move on',vw/2,vh/2+34)}
+  for(const w of S.preds)if(seen(w,10))drawPred(w,camx,camy);
+  if(S.helm){ctx.strokeStyle='#b4b1a4';ctx.lineWidth=4;const a=p.face,hx=vw/2-sh+Math.cos(a)*(14+p.fleece*1.3),hy=vh/2-sh+Math.sin(a)*(14+p.fleece*1.3);
+    for(const k of[-1,1]){ctx.beginPath();ctx.arc(hx-Math.sin(a)*k*6,hy+Math.cos(a)*k*6,5,0,6);ctx.stroke()}}
+
+  // fog of sight: clear around Bramble, darker beyond, black where never explored
+  const cx=vw/2-sh,cy=vh/2-sh,outer=1-0.12*(1-nt);
+  const g=ctx.createRadialGradient(cx,cy,vr*0.55,cx,cy,vr);
+  g.addColorStop(0,'rgba(5,7,12,0)');g.addColorStop(1,`rgba(5,7,12,${outer})`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,vw,vh);
+  if(nt>0){ctx.fillStyle=`rgba(10,16,40,${0.25*nt})`;ctx.fillRect(0,0,vw,vh)}
+  // the circle while moving
+  if(S.circling){ctx.strokeStyle='rgba(156,191,106,.45)';ctx.setLineDash([5,7]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,44+Math.sqrt(S.flock.length)*11+16,0,7);ctx.stroke();ctx.setLineDash([])}
+  // wolves' eyes in the dark
+  if(nt>0.3){for(const w of S.preds){const d=Math.hypot(w.x-p.x,w.y-p.y);if(d<vr+10||d>EYES_RANGE)continue;
+    const x=w.x-camx+Math.cos(w.face)*20,y=w.y-camy+Math.sin(w.face)*20,ox=-Math.sin(w.face)*3.5,oy=Math.cos(w.face)*3.5;
+    ctx.fillStyle=`rgba(255,214,90,${(nt-0.3)*1.4*(1-d/EYES_RANGE*0.5)})`;ctx.beginPath();ctx.arc(x+ox,y+oy,2.3,0,7);ctx.arc(x-ox,y-oy,2.3,0,7);ctx.fill()}}
+  // bleat: echo ring, and strays that answered show through the fog
+  for(const pg of S.pings){const k=pg.t/1.4;ctx.strokeStyle=`rgba(230,180,34,${0.6*(1-k)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(pg.x-camx,pg.y-camy,k*BLEAT_RANGE,0,7);ctx.stroke()}
+  for(const s of S.strays)if(s.seen>0&&!seen(s,10)){const x=s.x-camx,y=s.y-camy;if(!onScreen(x,y,10))continue;
+    ctx.globalAlpha=Math.min(1,s.seen);ctx.fillStyle='rgba(207,224,255,.25)';ctx.beginPath();ctx.arc(x,y,20,0,7);ctx.fill();ctx.fillStyle='#cfe0ff';ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill();ctx.globalAlpha=1}
+
+  if(p.grazing){ctx.fillStyle='rgba(244,242,230,.85)';ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.fillText(S.grass[tileAt(p.x,p.y)]>0.05?'munch':(terrAt(p.x,p.y)===MEADOW?'bare ground, move on':'nothing to eat here'),cx,cy+34)}
   ctx.textAlign='center';ctx.font='700 13px "Bricolage Grotesque",system-ui,sans-serif';
   for(const t of S.texts){ctx.globalAlpha=Math.min(1,t.life);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(t.txt,t.x-camx+1,t.y-camy+1);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x-camx,t.y-camy)}
   ctx.globalAlpha=1;
-  // joystick
   if(joy){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.ox,joy.oy,50,0,7);ctx.stroke();
     const dx=joy.x-joy.ox,dy=joy.y-joy.oy,m=Math.hypot(dx,dy),k=m>50?50/m:1;ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,18,0,7);ctx.fill()}
-  // minimap
-  const mm=Math.min(130,vw*0.28),mx=vw-mm-Math.max(12,0),my=12,sc=mm/WORLD;
-  ctx.fillStyle='rgba(22,28,18,.78)';ctx.fillRect(mx,my,mm,mm);ctx.strokeStyle='rgba(255,255,255,.25)';ctx.strokeRect(mx,my,mm,mm);
-  ctx.fillStyle='#bdb8a5';for(const s of S.strays)ctx.fillRect(mx+s.x*sc-1,my+s.y*sc-1,2.5,2.5);
+  // minimap: only explored ground, the flock, and strays heard answering a bleat
+  const mm=Math.min(130,vw*0.28),mx=vw-mm-12,my=12,sc=mm/WORLD;
+  ctx.fillStyle='#000';ctx.fillRect(mx,my,mm,mm);ctx.imageSmoothingEnabled=false;ctx.drawImage(mmc,mx,my,mm,mm);ctx.imageSmoothingEnabled=true;
+  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.strokeRect(mx,my,mm,mm);
+  ctx.fillStyle='#cfe0ff';for(const s of S.strays)if(s.seen>0||seen(s))ctx.fillRect(mx+s.x*sc-1.5,my+s.y*sc-1.5,3,3);
   ctx.fillStyle='#fff';for(const s of S.flock)ctx.fillRect(mx+s.x*sc-1,my+s.y*sc-1,2.5,2.5);
-  ctx.fillStyle='#e05a4a';for(const w of S.preds)ctx.fillRect(mx+w.x*sc-1,my+w.y*sc-1,3,3);
+  ctx.fillStyle='#e05a4a';for(const w of S.preds)if(seen(w))ctx.fillRect(mx+w.x*sc-1,my+w.y*sc-1,3,3);
   ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(mx+p.x*sc,my+p.y*sc,3,0,7);ctx.fill();
-  ctx.strokeStyle='rgba(230,180,34,.5)';ctx.strokeRect(mx+camx*sc,my+camy*sc,vw*sc,vh*sc);
 }
 function hud(){
-  const p=S.p,set=(id,v)=>document.getElementById(id).textContent=v,bar=(id,f)=>document.getElementById(id).style.width=clamp(f,0,1)*100+'%';
+  const p=S.p,set=(id,v)=>$(id).textContent=v,bar=(id,f)=>$(id).style.width=clamp(f,0,1)*100+'%';
   const ph=phase(),hrs=(6+ph*24)%24;
   set('day',`Day ${S.day} · ${String(~~hrs).padStart(2,'0')}:${String(~~((hrs%1)*60)).padStart(2,'0')}${isNight()?' · night':''}`);
   set('rank',rank(S.flock.length+1));
   bar('bHunger',p.hunger/100);set('vHunger',~~p.hunger);bar('bHealth',p.health/100);set('vHealth',Math.max(0,~~p.health));
-  bar('bFleece',p.fleece/10);set('vFleece',p.fleece.toFixed(1)+'kg');document.getElementById('bFleece').style.background=p.fleece>7?'#e0835a':p.fleece>4?'#e6b422':'#f4f2e6';
-  set('vFlock',`${S.flock.length+1} sheep`);set('vWool',`${~~p.wool} wool`);
+  bar('bFleece',p.fleece/10);set('vFleece',p.fleece.toFixed(1)+'kg');$('bFleece').style.background=p.fleece>7?'#e0835a':p.fleece>4?'#e6b422':'#f4f2e6';
+  set('vFlock',`${S.flock.length+1} sheep`);const ready=S.flock.filter(s=>s.fleece>=4).length;set('vReady',ready?`${ready} ready`:'');
+  set('vWool',~~S.wool);set('vWood',S.wood);set('vStone',S.stone);
 }
 
 // ---------- overlays ----------
-const ov=document.getElementById('overlay'),card=document.getElementById('card');
+const ov=$('overlay'),card=$('card');
 function showIntro(){
   card.innerHTML=`<div class="eb">Prototype · the first nights</div><h1>The Sheep Are <span>Angry!</span></h1>
-  <p>The humans are gone. You are Bramble, a ewe with a yellow ear tag. Find the strays, keep them close, and live to see the morning.</p>
+  <p>The humans are gone. You are Bramble, a ewe with a yellow ear tag. You can only see what's around you, and at night you can barely see at all.</p>
   <ul><li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
-  <li><kbd>Shift</kbd> or CHARGE to headbutt a predator. Rams in your flock charge too.</li>
-  <li>Walk near a stray to recruit it. Five or more sheep bunched together make a ring predators won't break.</li>
-  <li>Your fleece keeps growing and slows you down. Rub against rocks and fence posts to shed it, or you may get cast on your back.</li></ul>
+  <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
+  <li><kbd>Shift</kbd> or CHARGE to headbutt. Charge trees and buildings for wood and big cracked rocks for stone. It also knocks wolves back.</li>
+  <li>Walk near a stray to recruit it. Their fleeces grow; press <kbd>F</kbd> or SHEAR near flockmates with a yellow dot to harvest wool.</li>
+  <li>Wolves will attack a flock that stands still. With four or more flockmates, keep moving and they circle you, and the wolves can only pace around.</li>
+  <li>Grazing is slow, and while heads are down the flock spreads out and can't see far. Only green meadow has grass; scree, bog and old roads have none, bog slows you, and nothing crosses water.</li>
+  <li><kbd>C</kbd> or CRAFT to build from wool, wood and stone: a fold to shelter in, stone walls, a decoy sheep, dag traps and a ram-horn helm.</li>
+  <li>Your own fleece slows you down. Rub against rocks and posts to shed it, or you may get cast on your back.</li></ul>
   <button id="go" type="button">Leave the field</button>`;
-  ov.hidden=false;document.getElementById('go').onclick=start;document.getElementById('go').focus();
+  ov.hidden=false;$('go').onclick=start;$('go').focus();
 }
 function showOver(){
   card.innerHTML=`<div class="eb">Bramble has fallen</div><h1>Day ${S.day}</h1>
-  <p>Largest flock: <b>${S.maxFlock}</b> sheep (${rank(S.maxFlock)}). Wool shed: <b>${~~S.p.wool}</b>.</p>
-  <p>${S.maxFlock<5?'Next time, gather strays before the first night. Alone, a sheep is dinner.':'The flock remembers her. Try keeping them tighter when the eyes appear.'}</p>
+  <p>Largest flock: <b>${S.maxFlock}</b> sheep (${rank(S.maxFlock)}). Gathered <b>${~~S.wool}</b> wool, <b>${S.wood}</b> wood and <b>${S.stone}</b> stone.</p>
+  <p>${S.maxFlock<5?'Next time, bleat to find strays before the first night. Alone, a sheep is dinner.':'At night, graze in short bursts. Every time you stop, the wolves close in.'}</p>
   <button id="go" type="button">Try again</button>`;
-  ov.hidden=false;document.getElementById('go').onclick=start;document.getElementById('go').focus();
+  ov.hidden=false;$('go').onclick=start;$('go').focus();
 }
-function start(){newGame();ov.hidden=true;toast('Morning. Find other sheep before dark.');last=performance.now()}
+function start(){newGame();ov.hidden=true;toast('Morning. Bleat to find other sheep before dark.');last=performance.now()}
 
 let last=performance.now();
 function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(S.running&&ov.hidden)update(dt);draw();hud();requestAnimationFrame(frame)}
-newGame();S.running=true;showIntro();requestAnimationFrame(frame);
+newGame();explore();showIntro();requestAnimationFrame(frame);
 </script>
