@@ -22,6 +22,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
   font:800 11px/1 var(--display);touch-action:none;user-select:none;-webkit-user-select:none}
 #btns button span{display:block;font:500 9px/1 var(--mono);opacity:.6;margin-top:3px}
 #btns button:active,#btns button.on{background:rgba(230,180,34,.4)}
+/* cooldown ring: --p runs from 0 to 1 as the action recharges, and the ring turns yellow when it's ready */
+#btns button{position:relative;--p:1;border-color:transparent}
+#btns button::before{content:"";position:absolute;inset:-3px;border-radius:50%;pointer-events:none;
+  background:conic-gradient(var(--ring,rgba(255,255,255,.55)) calc(var(--p)*360deg),rgba(255,255,255,.12) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px))}
+#btns button.cooling{color:rgba(244,242,230,.55)}
+#btns button.ready{--ring:var(--tag)}
 #btns button:focus-visible{outline:2px solid var(--tag)}
 #overlay{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(5,7,10,.78);overflow:auto;padding-block:16px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -175,7 +182,7 @@ function mkSheep(x,y,ram){const hp=ram?4:2;return{x,y,vx:0,vy:0,face:rnd(0,6.28)
 // ---------- input ----------
 const keys={};
 let joy=null,grazeBtn=false,chargeReq=false,bleatReq=false,shearReq=false,craftReq=false;
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='shift'||k==='e')chargeReq=true;if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 cv.addEventListener('pointerdown',e=>{joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
@@ -360,7 +367,7 @@ function update(dt){
   let spd=150*(1-Math.min(0.55,heavy*0.075));
   p.grazing=(keys[' ']||keys['g']||grazeBtn)&&p.cast<=0;
   if(p.cast>0){p.cast-=dt;if(neighbours(p,55)>0)p.cast-=dt*2;if(p.cast<=0)say(p.x,p.y-30,'Back on my feet!');}
-  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=[2.2,2,1.8,1.1][S.horns];say(p.x,p.y-30,'Baaa!','#e6b422')}
+  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=p.dashMax=[2.2,2,1.8,1.1][S.horns];say(p.x,p.y-30,'Baaa!','#e6b422')}
   chargeReq=false;p.dashCd-=dt;
   S.bleatCd-=dt;if(bleatReq&&S.bleatCd<=0)bleat();bleatReq=false;
   if(shearReq)shear();shearReq=false;
@@ -702,6 +709,8 @@ function hud(){
   const R=REG[regionAt(p.x,p.y)];$('region').textContent=R.name;$('region').style.color=R.col;
   const dogs=S.preds.filter(w=>w.tame).length,rams=S.flock.filter(s=>s.ram).length;
   set('vFlock',`${S.flock.length+1} sheep${rams?` · ${rams} ram${rams>1?'s':''}`:''}${dogs?` · ${dogs} dog${dogs>1?'s':''}`:''}`);const ready=S.flock.filter(s=>s.fleece>=4).length;set('vReady',ready?`${ready} ready`:'');
+  const ring=(id,left,max)=>{const b=$(id),pr=max>0?clamp(1-left/max,0,1):1;b.style.setProperty('--p',pr.toFixed(3));b.classList.toggle('cooling',pr<1);b.classList.toggle('ready',pr>=1)};
+  ring('bCharge',p.dashCd,p.dashMax||1);ring('bBleat',S.bleatCd,4);
   set('vWool',~~S.wool);set('vWood',S.wood);set('vStone',S.stone);set('vMetal',S.metal);
 }
 
