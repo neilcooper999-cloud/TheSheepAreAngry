@@ -20,6 +20,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 @keyframes pulse{0%{color:#e6b422;transform:scale(1.35)}100%{color:inherit;transform:scale(1)}}
 #vFlock{display:inline-block;transform-origin:left center}
 @media (prefers-reduced-motion:reduce){#vFlock.pulse{animation:none}}
+/* narrow screens: a compact stats panel that leaves room for the minimap (28% of the width) beside it */
+@media (max-width:640px){#hud{min-width:0;max-width:calc(72vw - 36px);padding:7px 9px;gap:3px;font-size:10.5px;box-sizing:border-box}
+  #hud .top{font-size:13px}.reg{font-size:9.5px}.row{grid-template-columns:44px 1fr 40px;gap:6px}.bar{height:5px}.stores{gap:1px 7px}}
 .reg{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-top:-2px}
 .stores{display:flex;flex-wrap:wrap;gap:4px 10px;font-variant-numeric:tabular-nums;color:#d8d4c0}
 .stores b{color:var(--ink)}
