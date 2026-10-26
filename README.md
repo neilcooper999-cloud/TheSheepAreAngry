@@ -19,6 +19,12 @@ When you graze the whole flock grazes, so a big flock strips a pasture fast, and
 
 You only see the area around Flossy, much less at night. Wolves attack a flock that stands still, but not one circling a moving Flossy.
 
+## Regions and enemies
+
+The map is split into regions, each with its own mix of resources and danger: Home Meadows (gentle), Old Farmland (barns, tractors, wild sheepdogs), the Wildwood (timber, foxes by day), the Marsh (bog, lost sheep), the Fells (stone, little grass, wolves by day) and the Ruined Town (rich in metal but no grass, and dangerous day and night).
+
+Wolves kill a ewe in one bite. Foxes are smaller and take two bites for a ewe and four for a ram. Rams defend the flock on their own and survive two wolf bites. Wild sheepdogs herd your sheep away; charge one three times to train it, and it patrols around the flock and chases off predators.
+
 ## Crafting
 
 You start able to gather only wood. The Ram-horn Helm lets you break rock for stone, and Stone-tipped Horns let you break old cars and tractors for metal. Stone unlocks Flint Shears, which you need before you can harvest wool. Shelter has its own tree, upgraded in place: Wooden Pen, Wool-lined Pen, Drystone Fold, Iron-gated Steading. Wolves chew through the weaker pens.
