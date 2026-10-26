@@ -11,6 +11,15 @@ Open `index.html` in a browser. It is a single file with no build step.
 - WASD or arrow keys to move (drag anywhere on a touch screen)
 - Space or GRAZE to eat
 - Shift or CHARGE to headbutt; rams in your flock charge with you
+- B or BLEAT to call out; nearby strays answer and show briefly (wolves hear it at night)
+- F or SHEAR to harvest wool from your flock (needs shears)
+- C or CRAFT to open the upgrade tree
+
+You only see the area around Bramble, much less at night. Wolves attack a flock that stands still, but not one circling a moving Bramble.
+
+## Crafting
+
+You start able to gather only wood. The Ram-horn Helm lets you break rock for stone, and Stone-tipped Horns let you break old cars and tractors for metal. Stone unlocks Flint Shears, which you need before you can harvest wool. Shelter has its own tree, upgraded in place: Wooden Pen, Wool-lined Pen, Drystone Fold, Iron-gated Steading. Wolves chew through the weaker pens.
 
 ## Docs
 
