@@ -198,7 +198,7 @@ function mkSheep(x,y,ram){const hp=ram?4:2;return{name:pickName(ram),x,y,vx:0,vy
 // ---------- input ----------
 const keys={};
 let joy=null,grazeBtn=false,chargeReq=false,bleatReq=false,shearReq=false,craftReq=false;
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='shift'||k==='e')chargeReq=true;if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(!keys[k]){if(k==='b')bleatReq=true;if(k==='shift'||k==='e')chargeReq=true;if(k==='m'){muted=!muted;toast(muted?'Sound off (press M to turn it back on)':'Sound on',2)}if(k==='f')shearReq=true;if(k==='c')craftReq=true;if(k==='escape'&&!ov.hidden&&!S.over&&$('close'))closeCraft()}keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 cv.addEventListener('pointerdown',e=>{joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
@@ -281,8 +281,28 @@ function recruit(s,quiet){
   const el=$('vFlock');el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');
   chime(s.ram);
 }
-let actx=null;
-function chime(low){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime;
+let actx=null,muted=false;
+const audio=()=>{if(muted)return null;actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx};
+// "CHAAA-AARGE!" in sheep: two bleated syllables, a sawtooth voice through "aa" formants with the fast warble of a real baa
+function baaCharge(){try{const a=audio();if(!a)return;const t0=a.currentTime;
+  const out=a.createGain();out.gain.value=0.5;out.connect(a.destination);
+  const noise=(t,dur,freq,q,vol)=>{const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();src.buffer=b;bp.type='bandpass';bp.frequency.value=freq;bp.Q.value=q;
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);src.connect(bp).connect(g).connect(out);src.start(t)};
+  const syll=(t,dur,f0,f1,f2)=>{const o=a.createOscillator(),g=a.createGain(),trem=a.createOscillator(),tg=a.createGain(),vib=a.createOscillator(),vg=a.createGain();
+    o.type='sawtooth';o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f1,t+dur*0.35);o.frequency.linearRampToValueAtTime(f2,t+dur);
+    vib.frequency.value=6;vg.gain.value=f1*0.04;vib.connect(vg).connect(o.frequency);
+    trem.frequency.value=24;tg.gain.value=0.45;trem.connect(tg).connect(g.gain);
+    g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.55,t+0.04);g.gain.setValueAtTime(0.55,t+dur*0.7);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    const f1f=a.createBiquadFilter(),f2f=a.createBiquadFilter(),mix=a.createGain();f1f.type=f2f.type='bandpass';f1f.frequency.value=800;f1f.Q.value=5;f2f.frequency.value=1250;f2f.Q.value=7;mix.gain.value=2.2;
+    o.connect(g);g.connect(f1f).connect(mix);g.connect(f2f).connect(mix);mix.connect(out);
+    for(const n of[o,trem,vib]){n.start(t);n.stop(t+dur+0.05)}};
+  noise(t0,0.08,3200,1.2,0.5);              // "CH"
+  syll(t0+0.05,0.34,330,420,400);           // "AAA"
+  syll(t0+0.4,0.5,470,520,330);             // "AARR"
+  noise(t0+0.84,0.12,2400,2,0.35);          // "GE"
+}catch(e){}}
+function chime(low){try{const actx=audio();if(!actx)return;const t=actx.currentTime;
   [low?392:523,low?523:659,low?659:784].forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.value=f;
     g.gain.setValueAtTime(0,t+i*0.09);g.gain.linearRampToValueAtTime(0.12,t+i*0.09+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.09+0.4);o.connect(g).connect(actx.destination);o.start(t+i*0.09);o.stop(t+i*0.09+0.45)})}catch(e){}}
 function chargeHit(p){
@@ -425,7 +445,7 @@ function update(dt){
   let spd=150*(1-Math.min(0.55,heavy*0.075));
   p.grazing=(keys[' ']||keys['g']||grazeBtn)&&p.cast<=0;
   if(p.cast>0){p.cast-=dt;if(neighbours(p,55)>0)p.cast-=dt*2;if(p.cast<=0)say(p.x,p.y-30,'Back on my feet!');}
-  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=p.dashMax=[2.2,2,1.8,1.1,1,1][S.horns];say(p.x,p.y-30,'Baaa!','#e6b422');if(S.horns>=4)shock(p)}
+  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=p.dashMax=[2.2,2,1.8,1.1,1,1][S.horns];say(p.x,p.y-30,'CHAAA-AARGE!','#e6b422');baaCharge();if(S.horns>=4)shock(p)}
   chargeReq=false;p.dashCd-=dt;
   S.bleatCd-=dt;if(bleatReq&&S.bleatCd<=0)bleat();bleatReq=false;
   if(shearReq)shear();shearReq=false;
@@ -816,7 +836,7 @@ function showIntro(){
   <ul><li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
   <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
-  <li><kbd>Shift</kbd> or CHARGE to headbutt. At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
+  <li><kbd>Shift</kbd> or CHARGE to headbutt. (Press <kbd>M</kbd> to mute the sound.) At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
   <li>A bigger flock can carry more: each ewe adds 6 to how much you can hold and each ram adds 10.</li>
   <li>A bigger flock sees further, helps you gather more with every charge, and from ten sheep a lookout warns you of wolves. It also gets hungrier and draws more wolves.</li>
   <li>Sheep are rare out here. There's a ewe and a ram somewhere near home, and the old farms have pens with sheep shut inside: charge a pen to break them out.</li>
