@@ -1,0 +1,343 @@
+<title>The Shepherdless: First Nights</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Single look: the game world is its own palette, so colors are set explicitly for both host themes. */
+:root{--ink:#f4f2e6;--panel:rgba(22,28,18,.78);--tag:#e6b422;--rust:#e0835a;--moss:#9cbf6a;--bad:#e05a4a;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;color-scheme:dark}
+html,body{height:100%;margin:0;overflow:hidden;background:#1d2617;color:var(--ink);font:500 13px/1.3 var(--mono)}
+#c{display:block;width:100%;height:100%;touch-action:none}
+#hud{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:max(10px,env(safe-area-inset-left,0px));background:var(--panel);
+  padding:10px 12px;border-radius:8px;display:grid;gap:6px;min-width:210px;pointer-events:none}
+.row{display:grid;grid-template-columns:62px 1fr 58px;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.bar{height:7px;background:rgba(255,255,255,.14);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:50%;border-radius:4px}
+#hud .top{display:flex;justify-content:space-between;gap:12px;font:800 15px/1.1 var(--display)}
+#rank{color:var(--tag)}
+#btns{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:10px}
+#btns button{width:74px;height:74px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:var(--panel);color:var(--ink);
+  font:800 13px/1 var(--display);touch-action:none;user-select:none;-webkit-user-select:none}
+#btns button:active,#btns button.on{background:rgba(230,180,34,.4)}
+#btns button:focus-visible{outline:2px solid var(--tag)}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(14,18,11,.72);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.card{max-width:30rem;background:#232c1c;border:1px solid #3d4a31;border-radius:10px;padding:24px;font:400 14px/1.55 system-ui,sans-serif}
+.card h1{font:800 2.2rem/1 var(--display);margin:0 0 .4rem;letter-spacing:-.02em}
+.card h1 span{color:var(--moss)}
+.card .eb{font:500 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--rust)}
+.card ul{padding-left:1.1rem;margin:.6rem 0}
+.card kbd{font:500 12px var(--mono);background:#36422b;padding:1px 6px;border-radius:4px}
+.card button{margin-top:10px;font:800 16px/1 var(--display);background:var(--tag);color:#2b2300;border:0;border-radius:6px;padding:12px 20px;cursor:pointer}
+.card button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+#toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:800 16px/1.2 var(--display);
+  background:var(--panel);padding:8px 14px;border-radius:6px;pointer-events:none;text-align:center;max-width:calc(100% - 32px)}
+@media (max-width:640px){#toast{top:auto;bottom:calc(100px + env(safe-area-inset-bottom,0px))}}
+</style>
+
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="top"><span id="day">Day 1</span><span id="rank">Stray</span></div>
+  <div class="row"><span>Hunger</span><div class="bar"><i id="bHunger" style="background:#9cbf6a"></i></div><span id="vHunger">100</span></div>
+  <div class="row"><span>Health</span><div class="bar"><i id="bHealth" style="background:#e05a4a"></i></div><span id="vHealth">100</span></div>
+  <div class="row"><span>Fleece</span><div class="bar"><i id="bFleece" style="background:#f4f2e6"></i></div><span id="vFleece">2kg</span></div>
+  <div class="row"><span>Flock</span><span id="vFlock">1</span><span id="vWool">0 wool</span></div>
+</div>
+<div id="btns"><button id="bGraze" type="button">GRAZE</button><button id="bCharge" type="button">CHARGE</button></div>
+<div id="toast" hidden></div>
+<div id="overlay"><div class="card" id="card"></div></div>
+
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const WORLD=3200,T=40,COLS=WORLD/T,DAY=140,NIGHT_START=0.62;
+let vw,vh,dpr;
+function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr}
+addEventListener('resize',resize);resize();
+
+const rnd=(a,b)=>a+Math.random()*(b-a), clamp=(v,a,b)=>v<a?a:v>b?b:v, dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+let S; // game state
+
+function newGame(){
+  const grass=new Float32Array(COLS*COLS);
+  // patchy meadow from a few overlapping blobs
+  const blobs=[...Array(40)].map(()=>({x:rnd(0,COLS),y:rnd(0,COLS),r:rnd(3,11)}));
+  for(let y=0;y<COLS;y++)for(let x=0;x<COLS;x++){
+    let g=0.25+Math.random()*0.15;
+    for(const b of blobs){const d=Math.hypot(x-b.x,y-b.y);if(d<b.r)g+=0.7*(1-d/b.r)}
+    grass[y*COLS+x]=Math.min(1,g);
+  }
+  const c=WORLD/2,rocks=[],posts=[],houses=[];
+  for(let i=0;i<80;i++){const r={x:rnd(60,WORLD-60),y:rnd(60,WORLD-60),r:rnd(14,32)};if(Math.hypot(r.x-c,r.y-c)>120)rocks.push(r)}
+  // old fence lines: rows of posts
+  for(let i=0;i<14;i++){let x=rnd(200,WORLD-200),y=rnd(200,WORLD-200);const a=Math.random()<.5?0:Math.PI/2,n=8+~~rnd(0,10);
+    for(let k=0;k<n;k++)posts.push({x:x+Math.cos(a)*k*34,y:y+Math.sin(a)*k*34,r:6})}
+  for(let i=0;i<5;i++)houses.push({x:rnd(300,WORLD-400),y:rnd(300,WORLD-400),w:rnd(90,150),h:rnd(70,110)});
+  const strays=[];
+  for(let i=0;i<26;i++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150);if(Math.hypot(cx-c,cy-c)<320){i--;continue}
+    const n=1+~~rnd(0,3);for(let k=0;k<n;k++)strays.push(mkSheep(cx+rnd(-40,40),cy+rnd(-40,40),Math.random()<.2))}
+  S={t:DAY*0.12,grass,rocks,posts,houses,strays,flock:[],preds:[],texts:[],
+    p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,wool:0,dash:0,dashCd:0,cast:0,grazing:false,bob:0},
+    spawnT:0,maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,lastDay:1};
+}
+function mkSheep(x,y,ram){return{x,y,vx:0,vy:0,face:rnd(0,6.28),ram,fleece:rnd(2,6),wand:rnd(0,6.28),bob:rnd(0,9)}}
+
+// ---------- input ----------
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault()});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+let joy=null,grazeBtn=false,chargeReq=false;
+cv.addEventListener('pointerdown',e=>{joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY}});
+const endJoy=e=>{if(joy&&e.pointerId===joy.id)joy=null};
+cv.addEventListener('pointerup',endJoy);cv.addEventListener('pointercancel',endJoy);
+const gb=document.getElementById('bGraze'),cb=document.getElementById('bCharge');
+gb.addEventListener('pointerdown',e=>{e.preventDefault();grazeBtn=true;gb.classList.add('on')});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>gb.addEventListener(ev,()=>{grazeBtn=false;gb.classList.remove('on')}));
+cb.addEventListener('pointerdown',e=>{e.preventDefault();chargeReq=true});
+
+function inputVec(){
+  let x=0,y=0;
+  if(keys['a']||keys['arrowleft'])x--; if(keys['d']||keys['arrowright'])x++;
+  if(keys['w']||keys['arrowup'])y--; if(keys['s']||keys['arrowdown'])y++;
+  if(joy){const dx=joy.x-joy.ox,dy=joy.y-joy.oy,m=Math.hypot(dx,dy);if(m>8){x=dx/Math.max(m,50);y=dy/Math.max(m,50)}}
+  const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}return{x,y};
+}
+
+// ---------- helpers ----------
+const tileAt=(x,y)=>{const tx=clamp(~~(x/T),0,COLS-1),ty=clamp(~~(y/T),0,COLS-1);return ty*COLS+tx};
+function say(x,y,txt,col='#f4f2e6'){S.texts.push({x,y,txt,col,life:2.2})}
+let toastT=0;function toast(m,sec=3){const el=document.getElementById('toast');el.textContent=m;el.hidden=false;toastT=sec}
+const solids=()=>S.rocks.concat(S.posts);
+function collide(o,rad){
+  for(const r of S.rocks){const d=Math.hypot(o.x-r.x,o.y-r.y),m=r.r+rad;if(d<m&&d>0){o.x=r.x+(o.x-r.x)/d*m;o.y=r.y+(o.y-r.y)/d*m}}
+  for(const h of S.houses){if(o.x>h.x-rad&&o.x<h.x+h.w+rad&&o.y>h.y-rad&&o.y<h.y+h.h+rad){
+    const l=o.x-(h.x-rad),r=h.x+h.w+rad-o.x,t=o.y-(h.y-rad),b=h.y+h.h+rad-o.y,mn=Math.min(l,r,t,b);
+    if(mn===l)o.x=h.x-rad;else if(mn===r)o.x=h.x+h.w+rad;else if(mn===t)o.y=h.y-rad;else o.y=h.y+h.h+rad}}
+  o.x=clamp(o.x,rad,WORLD-rad);o.y=clamp(o.y,rad,WORLD-rad);
+}
+const phase=()=>(S.t%DAY)/DAY;
+const isNight=()=>phase()>NIGHT_START;
+function darkness(){const ph=phase();
+  if(ph<0.06)return 0.55*(1-ph/0.06); if(ph<NIGHT_START-0.06)return 0;
+  if(ph<NIGHT_START+0.02)return 0.75*(ph-(NIGHT_START-0.06))/0.08; return 0.75}
+function allSheep(){return [S.p,...S.flock]}
+function neighbours(s,r){let n=0;for(const o of allSheep())if(o!==s&&Math.hypot(o.x-s.x,o.y-s.y)<r)n++;return n}
+function rank(n){return n>=20?'Herd':n>=5?'Flock':'Stray'}
+
+// ---------- update ----------
+function update(dt){
+  S.t+=dt;const p=S.p;
+  const day=1+Math.floor(S.t/DAY);
+  if(day!==S.lastDay){S.lastDay=day;S.day=day;toast(`Dawn, day ${day}. The predators slink off.`)}
+  // player
+  const iv=inputVec();
+  const heavy=Math.max(0,p.fleece-4);
+  let spd=150*(1-Math.min(0.55,heavy*0.075));
+  p.grazing=(keys[' ']||keys['g']||grazeBtn)&&p.cast<=0;
+  if(p.cast>0){p.cast-=dt;if(neighbours(p,55)>0)p.cast-=dt*2;if(p.cast<=0)say(p.x,p.y-30,'Back on my feet!');}
+  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=2.6;say(p.x,p.y-30,'Baaa!','#e6b422')}
+  chargeReq=false;
+  p.dashCd-=dt;
+  let mx=iv.x,my=iv.y;
+  if(p.cast>0||p.grazing){mx=0;my=0}
+  if(p.dash>0){p.dash-=dt;spd*=3;if(mx===0&&my===0){mx=Math.cos(p.face);my=Math.sin(p.face)}}
+  p.vx+=(mx*spd-p.vx)*Math.min(1,dt*10);p.vy+=(my*spd-p.vy)*Math.min(1,dt*10);
+  p.x+=p.vx*dt;p.y+=p.vy*dt;
+  const moving=Math.hypot(p.vx,p.vy)>20;
+  if(moving){p.face=Math.atan2(p.vy,p.vx);p.bob+=dt*12}
+  // rubbing on rocks/posts sheds fleece
+  let rubbing=false;
+  for(const r of solids()){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16&&moving){rubbing=true;break}}
+  collide(p,14);
+  if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;p.wool+=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
+  p.fleece+=dt*0.035;
+  // getting cast
+  if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, Bramble has rolled onto her back. A flockmate nearby helps her up faster.')}
+  // hunger & grazing
+  p.hunger-=dt*(1.05+heavy*0.08);
+  if(p.grazing){const i=tileAt(p.x,p.y),g=S.grass[i];if(g>0.05){const e=Math.min(g,dt*0.5);S.grass[i]-=e;p.hunger+=e*55}}
+  p.hunger=clamp(p.hunger,0,100);
+  if(p.hunger<=0)p.health-=dt*6;else if(p.hunger>50)p.health+=dt*1.2;
+  p.health=Math.min(100,p.health);
+  // grass regrows slowly
+  for(let i=0;i<S.grass.length;i++)if(S.grass[i]<1)S.grass[i]=Math.min(1,S.grass[i]+dt*0.006);
+
+  // strays wander and join
+  for(let i=S.strays.length-1;i>=0;i--){const s=S.strays[i];
+    s.wand+=rnd(-1,1)*dt;const sp=Math.random()<0.5?14:0;
+    s.vx=Math.cos(s.wand)*sp;s.vy=Math.sin(s.wand)*sp;s.x+=s.vx*dt;s.y+=s.vy*dt;if(sp)s.face=s.wand;collide(s,12);
+    if(Math.hypot(s.x-p.x,s.y-p.y)<75){S.strays.splice(i,1);S.flock.push(s);
+      say(s.x,s.y-26,s.ram?'A ram joins you!':['Baa?','Take me with you!','Where are the humans?','Mehh!'][~~rnd(0,4)],s.ram?'#e6b422':'#f4f2e6')}}
+  // flock boids
+  const fl=S.flock;
+  for(const s of fl){
+    let ax=0,ay=0;const dx=p.x-s.x,dy=p.y-s.y,d=Math.hypot(dx,dy)||1;
+    const want=40+Math.sqrt(fl.length)*14;
+    if(d>want){ax+=dx/d*(d-want)*5}
+    for(const o of fl){if(o===s)continue;const ox=s.x-o.x,oy=s.y-o.y,od=Math.hypot(ox,oy);if(od<26&&od>0){ax+=ox/od*(26-od)*9;ay+=oy/od*(26-od)*9}}
+    const pd=Math.hypot(s.x-p.x,s.y-p.y);if(pd<30&&pd>0){ax+=(s.x-p.x)/pd*(30-pd)*9;ay+=(s.y-p.y)/pd*(30-pd)*9}
+    ay+=dy/d*(d>want?(d-want)*5:0);
+    for(const w of S.preds){const wd=Math.hypot(s.x-w.x,s.y-w.y);if(wd<140&&wd>0){ax+=(s.x-w.x)/wd*120;ay+=(s.y-w.y)/wd*120}}
+    s.vx+=ax*dt;s.vy+=ay*dt;s.vx*=Math.pow(0.12,dt);s.vy*=Math.pow(0.12,dt);
+    const v=Math.hypot(s.vx,s.vy),max=s.ram&&s.charge>0?420:205;if(v>max){s.vx*=max/v;s.vy*=max/v}
+    s.x+=s.vx*dt;s.y+=s.vy*dt;if(v>15){s.face=Math.atan2(s.vy,s.vx);s.bob+=dt*12}
+    collide(s,12);
+    if(v<20){const i=tileAt(s.x,s.y);S.grass[i]=Math.max(0,S.grass[i]-dt*0.05)}
+    // rams charge alongside Bramble
+    if(s.ram&&p.dash>0.2&&!s.charge){const t=nearestPred(s,260);if(t){s.charge=0.5;const a=Math.atan2(t.y-s.y,t.x-s.x);s.vx=Math.cos(a)*420;s.vy=Math.sin(a)*420}}
+    if(s.charge>0){s.charge-=dt;if(s.charge<=0)s.charge=0}
+  }
+  S.maxFlock=Math.max(S.maxFlock,fl.length+1);
+
+  // predators
+  if(isNight()){S.spawnT-=dt;const cap=2+S.day*2;
+    if(S.spawnT<=0&&S.preds.length<cap){S.spawnT=Math.max(2.5,8-S.day);
+      const a=rnd(0,6.28),r=rnd(560,700);const w={x:clamp(p.x+Math.cos(a)*r,20,WORLD-20),y:clamp(p.y+Math.sin(a)*r,20,WORLD-20),vx:0,vy:0,state:'hunt',st:0,face:0,fox:S.day===1&&Math.random()<.5};
+      S.preds.push(w);if(S.preds.length===1)toast(w.fox?'Something is moving in the dark.':'Eyes in the dark. Keep the flock close.')}}
+  for(let i=S.preds.length-1;i>=0;i--){const w=S.preds[i];w.st-=dt;
+    if(!isNight()&&w.state!=='flee'){w.state='flee';w.st=99}
+    if(w.state!=='hunt'&&w.st<=0&&isNight())w.state='hunt';
+    let tx=0,ty=0,sp=0;
+    if(w.state==='stun'){sp=0}
+    else if(w.state==='flee'){const a=Math.atan2(w.y-p.y,w.x-p.x);tx=Math.cos(a);ty=Math.sin(a);sp=170}
+    else{
+      // pick the most isolated nearby sheep
+      let best=null,bs=1e9;for(const s of allSheep()){const d=Math.hypot(s.x-w.x,s.y-w.y);const sc=d*(1+neighbours(s,110)*0.35);if(sc<bs){bs=sc;best=s}}
+      if(best){const d=Math.hypot(best.x-w.x,best.y-w.y)||1;tx=(best.x-w.x)/d;ty=(best.y-w.y)/d;sp=w.fox?118:132+S.day*4;
+        if(d<120&&neighbours(best,110)>=4){w.state='flee';w.st=5;say(w.x,w.y-24,'The ring holds!','#9cbf6a')}
+        else if(d<18){
+          if(best===p){if(p.dash<=0){p.health-=w.fox?18:30;say(p.x,p.y-30,'Ouch!','#e05a4a');w.state='flee';w.st=3}}
+          else{S.flock.splice(S.flock.indexOf(best),1);say(best.x,best.y-20,'A flockmate is taken.','#e05a4a');w.state='flee';w.st=8}
+        }}
+    }
+    w.vx+=(tx*sp-w.vx)*Math.min(1,dt*4);w.vy+=(ty*sp-w.vy)*Math.min(1,dt*4);
+    w.x+=w.vx*dt;w.y+=w.vy*dt;if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,12);
+    // charge hits
+    const hitters=[p,...S.flock.filter(s=>s.charge>0)];
+    for(const h of hitters){if((h===p?p.dash>0:true)&&Math.hypot(h.x-w.x,h.y-w.y)<34&&w.state!=='stun'){
+      const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=1.2;
+      setTimeout(()=>{if(w.state==='stun'){w.state='flee';w.st=6}},1200);say(w.x,w.y-24,'Headbutt!','#e6b422')}}
+    if(w.state==='flee'&&Math.hypot(w.x-p.x,w.y-p.y)>950)S.preds.splice(i,1);
+  }
+  // texts
+  for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];t.life-=dt;t.y-=dt*14;if(t.life<=0)S.texts.splice(i,1)}
+  // milestones
+  const n=fl.length+1;
+  if(n>=5&&!S.flockShown){S.flockShown=true;toast('Rank up: Flock. Keep five or more together and predators break off.',4)}
+  if(n>=20&&!S.herdShown){S.herdShown=true;toast('Rank up: Herd. The valley is starting to belong to the sheep.',5)}
+  if(p.health<=0){S.over=true;S.running=false;showOver()}
+  if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').hidden=true}
+}
+function nearestPred(s,r){let b=null,bd=r;for(const w of S.preds){const d=Math.hypot(w.x-s.x,w.y-s.y);if(d<bd){bd=d;b=w}}return b}
+
+// ---------- draw ----------
+function drawSheep(s,isP,camx,camy){
+  const x=s.x-camx,y=s.y-camy,f=s.fleece||2,r=10+f*1.3,cast=isP&&s.cast>0;
+  ctx.save();ctx.translate(x,y);
+  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(2,4,r+3,r*0.8,0,0,7);ctx.fill();
+  ctx.rotate(s.face+(cast?Math.PI/2:0));
+  const b=Math.sin(s.bob||0)*1.2;
+  // legs when cast
+  if(cast){ctx.strokeStyle='#2a2622';ctx.lineWidth=3;for(const k of[-1,1])for(const j of[-1,1]){ctx.beginPath();ctx.moveTo(k*6,j*6);ctx.lineTo(k*9,j*(r+6));ctx.stroke()}}
+  ctx.fillStyle=isP?'#fbf8ec':'#ece7d6';
+  for(let k=0;k<7;k++){const a=k/7*6.28;ctx.beginPath();ctx.arc(Math.cos(a)*r*0.45-2,Math.sin(a)*r*0.4,r*0.62,0,7);ctx.fill()}
+  ctx.beginPath();ctx.ellipse(-2,0,r,r*0.82,0,0,7);ctx.fill();
+  ctx.fillStyle=s.ram?'#4a3d33':'#2a2622';ctx.beginPath();ctx.ellipse(r+2+b,0,7.5,5.5,0,0,7);ctx.fill();
+  if(s.ram){ctx.strokeStyle='#b8a27a';ctx.lineWidth=3;for(const k of[-1,1]){ctx.beginPath();ctx.arc(r+1+b,k*5,4.5,0,6);ctx.stroke()}}
+  ctx.fillStyle='#2a2622';for(const k of[-1,1]){ctx.beginPath();ctx.ellipse(r-1+b,k*7,3.5,2,k*0.6,0,7);ctx.fill()}
+  if(isP){ctx.fillStyle='#e6b422';ctx.fillRect(r-3+b,-10,5,4)}
+  ctx.restore();
+}
+function drawPred(w,camx,camy){
+  ctx.save();ctx.translate(w.x-camx,w.y-camy);ctx.rotate(w.face);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(2,4,20,9,0,0,7);ctx.fill();
+  ctx.fillStyle=w.fox?'#c2622e':'#6e6a66';ctx.beginPath();ctx.ellipse(0,0,18,8,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.ellipse(-20,0,10,3.5,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.moveTo(14,-6);ctx.lineTo(28,0);ctx.lineTo(14,6);ctx.fill();
+  ctx.fillStyle=w.state==='stun'?'#9cbf6a':'#ffd36a';ctx.beginPath();ctx.arc(20,-3,1.8,0,7);ctx.arc(20,3,1.8,0,7);ctx.fill();
+  ctx.restore();
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const p=S.p,camx=p.x-vw/2,camy=p.y-vh/2;
+  ctx.fillStyle='#14190f';ctx.fillRect(0,0,vw,vh);
+  const x0=Math.max(0,~~(camx/T)),y0=Math.max(0,~~(camy/T)),x1=Math.min(COLS-1,~~((camx+vw)/T)),y1=Math.min(COLS-1,~~((camy+vh)/T));
+  for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const g=S.grass[ty*COLS+tx];
+    const r=~~(120-g*62),gg=~~(98+g*62),b=~~(62-g*22);ctx.fillStyle=`rgb(${r},${gg},${b})`;ctx.fillRect(tx*T-camx,ty*T-camy,T+1,T+1);
+    if(g>0.7&&((tx*7+ty*13)%5===0)){ctx.fillStyle='rgba(240,230,150,.5)';ctx.fillRect(tx*T-camx+((tx*31)%30),ty*T-camy+((ty*17)%30),3,3)}}
+  // world edge
+  ctx.strokeStyle='#3b2f22';ctx.lineWidth=8;ctx.strokeRect(-camx,-camy,WORLD,WORLD);
+  for(const h of S.houses){const x=h.x-camx,y=h.y-camy;if(x>vw||y>vh||x+h.w<0||y+h.h<0)continue;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+6,y+8,h.w,h.h);ctx.fillStyle='#7d4a37';ctx.fillRect(x,y,h.w,h.h);
+    ctx.strokeStyle='#5c3326';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y+h.h/2);ctx.lineTo(x+h.w,y+h.h/2);ctx.stroke();
+    ctx.fillStyle='rgba(120,150,70,.55)';ctx.beginPath();ctx.arc(x+h.w*0.8,y+h.h*0.25,14,0,7);ctx.arc(x+h.w*0.15,y+h.h*0.8,10,0,7);ctx.fill()}
+  for(const r of S.posts){const x=r.x-camx,y=r.y-camy;if(x<-20||y<-20||x>vw+20||y>vh+20)continue;ctx.fillStyle='#6b4c30';ctx.fillRect(x-4,y-4,8,8)}
+  ctx.strokeStyle='rgba(150,150,140,.6)';ctx.lineWidth=1;
+  for(let i=1;i<S.posts.length;i++){const a=S.posts[i-1],b=S.posts[i];if(Math.hypot(a.x-b.x,a.y-b.y)<40){ctx.beginPath();ctx.moveTo(a.x-camx,a.y-camy);ctx.lineTo(b.x-camx,b.y-camy);ctx.stroke()}}
+  for(const r of S.rocks){const x=r.x-camx,y=r.y-camy;if(x<-40||y<-40||x>vw+40||y>vh+40)continue;
+    ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(x+3,y+4,r.r,0,7);ctx.fill();
+    ctx.fillStyle='#8c8a80';ctx.beginPath();ctx.arc(x,y,r.r,0,7);ctx.fill();ctx.fillStyle='#a6a498';ctx.beginPath();ctx.arc(x-r.r*0.3,y-r.r*0.3,r.r*0.5,0,7);ctx.fill()}
+  // ring indicator
+  const nb=neighbours(p,110);if(nb>=4){ctx.strokeStyle='rgba(156,191,106,.5)';ctx.setLineDash([6,8]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(vw/2,vh/2,110,0,7);ctx.stroke();ctx.setLineDash([])}
+  for(const s of S.strays)drawSheep(s,false,camx,camy);
+  for(const s of S.flock)drawSheep(s,false,camx,camy);
+  drawSheep(p,true,camx,camy);
+  for(const w of S.preds)drawPred(w,camx,camy);
+  // night
+  const dk=darkness();
+  if(dk>0){const g=ctx.createRadialGradient(vw/2,vh/2,60,vw/2,vh/2,Math.max(vw,vh)*0.6);
+    g.addColorStop(0,`rgba(8,12,30,${dk*0.45})`);g.addColorStop(1,`rgba(8,12,30,${Math.min(0.92,dk*1.35)})`);ctx.fillStyle=g;ctx.fillRect(0,0,vw,vh);
+    for(const w of S.preds){const x=w.x-camx,y=w.y-camy;ctx.fillStyle='#ffd36a';ctx.beginPath();ctx.arc(x+Math.cos(w.face)*20,y+Math.sin(w.face)*20,2.2,0,7);ctx.fill()}}
+  // grazing hint
+  if(p.grazing){ctx.fillStyle='rgba(244,242,230,.85)';ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.fillText(S.grass[tileAt(p.x,p.y)]>0.05?'munch':'bare ground, move on',vw/2,vh/2+34)}
+  ctx.textAlign='center';ctx.font='700 13px "Bricolage Grotesque",system-ui,sans-serif';
+  for(const t of S.texts){ctx.globalAlpha=Math.min(1,t.life);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(t.txt,t.x-camx+1,t.y-camy+1);ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x-camx,t.y-camy)}
+  ctx.globalAlpha=1;
+  // joystick
+  if(joy){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.ox,joy.oy,50,0,7);ctx.stroke();
+    const dx=joy.x-joy.ox,dy=joy.y-joy.oy,m=Math.hypot(dx,dy),k=m>50?50/m:1;ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,18,0,7);ctx.fill()}
+  // minimap
+  const mm=Math.min(130,vw*0.28),mx=vw-mm-Math.max(12,0),my=12,sc=mm/WORLD;
+  ctx.fillStyle='rgba(22,28,18,.78)';ctx.fillRect(mx,my,mm,mm);ctx.strokeStyle='rgba(255,255,255,.25)';ctx.strokeRect(mx,my,mm,mm);
+  ctx.fillStyle='#bdb8a5';for(const s of S.strays)ctx.fillRect(mx+s.x*sc-1,my+s.y*sc-1,2.5,2.5);
+  ctx.fillStyle='#fff';for(const s of S.flock)ctx.fillRect(mx+s.x*sc-1,my+s.y*sc-1,2.5,2.5);
+  ctx.fillStyle='#e05a4a';for(const w of S.preds)ctx.fillRect(mx+w.x*sc-1,my+w.y*sc-1,3,3);
+  ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(mx+p.x*sc,my+p.y*sc,3,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(230,180,34,.5)';ctx.strokeRect(mx+camx*sc,my+camy*sc,vw*sc,vh*sc);
+}
+function hud(){
+  const p=S.p,set=(id,v)=>document.getElementById(id).textContent=v,bar=(id,f)=>document.getElementById(id).style.width=clamp(f,0,1)*100+'%';
+  const ph=phase(),hrs=(6+ph*24)%24;
+  set('day',`Day ${S.day} · ${String(~~hrs).padStart(2,'0')}:${String(~~((hrs%1)*60)).padStart(2,'0')}${isNight()?' · night':''}`);
+  set('rank',rank(S.flock.length+1));
+  bar('bHunger',p.hunger/100);set('vHunger',~~p.hunger);bar('bHealth',p.health/100);set('vHealth',Math.max(0,~~p.health));
+  bar('bFleece',p.fleece/10);set('vFleece',p.fleece.toFixed(1)+'kg');document.getElementById('bFleece').style.background=p.fleece>7?'#e0835a':p.fleece>4?'#e6b422':'#f4f2e6';
+  set('vFlock',`${S.flock.length+1} sheep`);set('vWool',`${~~p.wool} wool`);
+}
+
+// ---------- overlays ----------
+const ov=document.getElementById('overlay'),card=document.getElementById('card');
+function showIntro(){
+  card.innerHTML=`<div class="eb">Prototype · the first nights</div><h1>The <span>Shepherdless</span></h1>
+  <p>The humans are gone. You are Bramble, a ewe with a yellow ear tag. Find the strays, keep them close, and live to see the morning.</p>
+  <ul><li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
+  <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
+  <li><kbd>Shift</kbd> or CHARGE to headbutt a predator. Rams in your flock charge too.</li>
+  <li>Walk near a stray to recruit it. Five or more sheep bunched together make a ring predators won't break.</li>
+  <li>Your fleece keeps growing and slows you down. Rub against rocks and fence posts to shed it, or you may get cast on your back.</li></ul>
+  <button id="go" type="button">Leave the field</button>`;
+  ov.hidden=false;document.getElementById('go').onclick=start;document.getElementById('go').focus();
+}
+function showOver(){
+  card.innerHTML=`<div class="eb">Bramble has fallen</div><h1>Day ${S.day}</h1>
+  <p>Largest flock: <b>${S.maxFlock}</b> sheep (${rank(S.maxFlock)}). Wool shed: <b>${~~S.p.wool}</b>.</p>
+  <p>${S.maxFlock<5?'Next time, gather strays before the first night. Alone, a sheep is dinner.':'The flock remembers her. Try keeping them tighter when the eyes appear.'}</p>
+  <button id="go" type="button">Try again</button>`;
+  ov.hidden=false;document.getElementById('go').onclick=start;document.getElementById('go').focus();
+}
+function start(){newGame();ov.hidden=true;toast('Morning. Find other sheep before dark.');last=performance.now()}
+
+let last=performance.now();
+function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(S.running&&ov.hidden)update(dt);draw();hud();requestAnimationFrame(frame)}
+newGame();S.running=true;showIntro();requestAnimationFrame(frame);
+</script>
