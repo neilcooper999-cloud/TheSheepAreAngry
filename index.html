@@ -178,7 +178,7 @@ const vision=()=>(VIS_DAY+(VIS_NIGHT-VIS_DAY)*nightness())*(S.p.grazing?0.7:1);
 function allSheep(){return [S.p,...S.flock]}
 function neighbours(s,r){let n=0;for(const o of allSheep())if(o!==s&&Math.hypot(o.x-s.x,o.y-s.y)<r)n++;return n}
 function rank(n){return n>=20?'Herd':n>=5?'Flock':'Stray'}
-const CIRCLE_MIN=4; // flockmates needed to circle Bramble
+const CIRCLE_MIN=4; // flockmates needed to circle Flossy
 
 function explore(){
   const p=S.p,r=vision(),tr=Math.ceil(r/T);
@@ -214,7 +214,7 @@ const SHELTERS=[null,
   {name:'Wooden Pen',hp:100,cost:{wood:12},text:'A ring of hurdles knocked together from scrap wood. Wolves can\'t get in at first, but they will chew through it.'},
   {name:'Wool-lined Pen',hp:240,cost:{wood:6,wool:8},need:()=>S.shears>=1,needText:'Needs Flint Shears',text:'Fleece packed into every gap. Much tougher, and the flock inside stays warm, so hunger drops more slowly.'},
   {name:'Drystone Fold',hp:520,cost:{stone:16,wool:4},need:()=>S.horns>=1,needText:'Needs a Ram-horn Helm',text:'A proper sheepfold of stacked stone. Wolves will be at it all night.'},
-  {name:'Iron-gated Steading',hp:Infinity,cost:{metal:8,stone:6},need:()=>S.horns>=2,needText:'Needs Stone-tipped Horns',text:'Stone walls and a gate of farm iron. Wolves can\'t break it, and Bramble slowly heals while resting inside.'}];
+  {name:'Iron-gated Steading',hp:Infinity,cost:{metal:8,stone:6},need:()=>S.horns>=2,needText:'Needs Stone-tipped Horns',text:'Stone walls and a gate of farm iron. Wolves can\'t break it, and Flossy slowly heals while resting inside.'}];
 const RECIPES=[
   {id:'horns1',track:'Horns',tier:1,name:'Ram-horn Helm',cost:{wood:6},text:'Curled horns carved from hardwood. Lets you break big rocks for stone.',done:()=>S.horns>=1},
   {id:'horns2',track:'Horns',tier:2,name:'Stone-tipped Horns',cost:{wood:4,stone:8},need:()=>S.horns>=1,needText:'Needs a Ram-horn Helm',text:'Flint chipped to a point. Lets you break old cars and tractors for metal, and you gather more from every charge.',done:()=>S.horns>=2},
@@ -311,13 +311,13 @@ function update(dt){
   const moving=Math.hypot(p.vx,p.vy)>40;
   if(moving){p.face=Math.atan2(p.vy,p.vx);p.bob+=dt*12;p.still=0}else p.still+=dt;
   if(p.dash>0)chargeHit(p);
-  // rubbing on rocks and posts sheds Bramble's own fleece
+  // rubbing on rocks and posts sheds Flossy's own fleece
   let rubbing=false;
   if(moving&&p.dash<=0){for(const r of S.rocks.concat(S.posts)){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16){rubbing=true;break}}}
   collide(p,14);
   if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
   p.fleece+=dt*0.035;
-  if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Bramble has rolled onto her back. A flockmate nearby helps her up faster.')}
+  if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Flossy has rolled onto her back. A flockmate nearby helps her up faster.')}
   // hunger and grazing
   const sh=shelterHere();
   p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.004)*(sh&&sh.tier>=2?0.6:1);
@@ -337,10 +337,10 @@ function update(dt){
     if(Math.hypot(s.x-p.x,s.y-p.y)<75){S.strays.splice(i,1);S.flock.push(s);
       say(s.x,s.y-26,s.ram?'A ram joins you!':['Baa?','Take me with you!','Where are the humans?','Mehh!'][~~rnd(0,4)],s.ram?'#e6b422':'#f4f2e6')}}
 
-  // flock: follow Bramble, and circle her while she keeps moving
+  // flock: follow Flossy, and circle her while she keeps moving
   const fl=S.flock;
   S.circling=fl.length>=CIRCLE_MIN&&p.still<0.6&&p.cast<=0;
-  if(S.circling&&!S.circleShown&&isNight()){S.circleShown=true;toast('The flock circles Bramble while she moves. Wolves won\'t break a moving circle.')}
+  if(S.circling&&!S.circleShown&&isNight()){S.circleShown=true;toast('The flock circles Flossy while she moves. Wolves won\'t break a moving circle.')}
   S.orbit+=dt*(S.circling?1.6:0);
   const R=44+Math.sqrt(fl.length)*11;
   fl.forEach((s,idx)=>{
@@ -513,7 +513,7 @@ function draw(){
     ctx.strokeStyle='#6b4c30';ctx.lineWidth=2.5;for(const k of[-6,6])for(const j of[-7,7]){ctx.beginPath();ctx.moveTo(x+k,y);ctx.lineTo(x+k*1.4,y+j*1.6);ctx.stroke()}
     ctx.fillStyle='#d9d2bb';ctx.beginPath();ctx.ellipse(x,y,15,11,0,0,7);ctx.fill();ctx.fillStyle='#6b4c30';ctx.fillRect(x+12,y-4,9,7);
     ctx.fillStyle='#2a2622';ctx.fillRect(x+16,y-2,2,2)}
-  // living things only where Bramble can actually see
+  // living things only where Flossy can actually see
   for(const s of S.strays)if(seen(s,10))drawSheep(s,false,camx,camy);
   for(const s of S.flock)drawSheep(s,false,camx,camy);
   drawSheep(p,true,camx,camy);
@@ -521,7 +521,7 @@ function draw(){
   if(S.horns){ctx.strokeStyle=['','#8a6a44','#b4b1a4','#8fa3b2'][S.horns];ctx.lineWidth=4;const a=p.face,hx=vw/2-sh+Math.cos(a)*(14+p.fleece*1.3),hy=vh/2-sh+Math.sin(a)*(14+p.fleece*1.3);
     for(const k of[-1,1]){ctx.beginPath();ctx.arc(hx-Math.sin(a)*k*6,hy+Math.cos(a)*k*6,5,0,6);ctx.stroke()}}
 
-  // fog of sight: clear around Bramble, darker beyond, black where never explored
+  // fog of sight: clear around Flossy, darker beyond, black where never explored
   const cx=vw/2-sh,cy=vh/2-sh,outer=1-0.12*(1-nt);
   const g=ctx.createRadialGradient(cx,cy,vr*0.55,cx,cy,vr);
   g.addColorStop(0,'rgba(5,7,12,0)');g.addColorStop(1,`rgba(5,7,12,${outer})`);
@@ -575,7 +575,7 @@ function hud(){
 const ov=$('overlay'),card=$('card');
 function showIntro(){
   card.innerHTML=`<div class="eb">Prototype · the first nights</div><h1>The Sheep Are <span>Angry!</span></h1>
-  <p>The humans are gone. You are Bramble, a ewe with a yellow ear tag. You can only see what's around you, and at night you can barely see at all.</p>
+  <p>The humans are gone. You are Flossy, a ewe with a yellow ear tag. You can only see what's around you, and at night you can barely see at all.</p>
   <ul><li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
   <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
@@ -589,7 +589,7 @@ function showIntro(){
   ov.hidden=false;$('go').onclick=start;$('go').focus();
 }
 function showOver(){
-  card.innerHTML=`<div class="eb">Bramble has fallen</div><h1>Day ${S.day}</h1>
+  card.innerHTML=`<div class="eb">Flossy has fallen</div><h1>Day ${S.day}</h1>
   <p>Largest flock: <b>${S.maxFlock}</b> sheep (${rank(S.maxFlock)}). Gathered <b>${~~S.wool}</b> wool, <b>${S.wood}</b> wood, <b>${S.stone}</b> stone and <b>${S.metal}</b> metal.</p>
   <p>${S.maxFlock<5?'Next time, bleat to find strays before the first night. Alone, a sheep is dinner.':'At night, graze in short bursts. Every time you stop, the wolves close in.'}</p>
   <button id="go" type="button">Try again</button>`;

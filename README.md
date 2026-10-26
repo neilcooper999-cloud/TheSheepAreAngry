@@ -2,7 +2,7 @@
 
 A top-down survival game where you play a sheep. A catastrophe has removed all humans from the Earth, and the sheep are making a bid to become the dominant species.
 
-You are Bramble, a ewe with a yellow ear tag. The camera stays centred on her while the world scrolls around her. Graze to stay fed, recruit strays into a flock, and survive the nights. Five or more sheep bunched together form a ring that predators won't break. Your fleece keeps growing and slows you down, so rub it off on rocks and fence posts before you get stuck on your back.
+You are Flossy, a ewe with a yellow ear tag. The camera stays centred on her while the world scrolls around her. Graze to stay fed, recruit strays into a flock, and survive the nights. Five or more sheep bunched together form a ring that predators won't break. Your fleece keeps growing and slows you down, so rub it off on rocks and fence posts before you get stuck on your back.
 
 ## Play
 
@@ -15,7 +15,7 @@ Open `index.html` in a browser. It is a single file with no build step.
 - F or SHEAR to harvest wool from your flock (needs shears)
 - C or CRAFT to open the upgrade tree
 
-You only see the area around Bramble, much less at night. Wolves attack a flock that stands still, but not one circling a moving Bramble.
+You only see the area around Flossy, much less at night. Wolves attack a flock that stands still, but not one circling a moving Flossy.
 
 ## Crafting
 
