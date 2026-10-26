@@ -15,6 +15,8 @@ Open `index.html` in a browser. It is a single file with no build step.
 - F or SHEAR to harvest wool from your flock (needs shears)
 - C or CRAFT to open the upgrade tree
 
+When you graze the whole flock grazes, so a big flock strips a pasture fast, and grass takes many days to grow back. A bigger flock sees further, gathers more and gets a lookout, but it is hungrier and draws more wolves.
+
 You only see the area around Flossy, much less at night. Wolves attack a flock that stands still, but not one circling a moving Flossy.
 
 ## Crafting

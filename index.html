@@ -67,7 +67,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
-const WORLD=5600,T=40,COLS=WORLD/T,DAY=140,NIGHT_START=0.62;
+const WORLD=9600,T=40,COLS=WORLD/T,DAY=140,NIGHT_START=0.62;
 const VIS_DAY=290,VIS_NIGHT=80,EYES_RANGE=560,BLEAT_RANGE=700;
 let vw,vh,dpr;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=innerWidth;vh=innerHeight;cv.width=vw*dpr;cv.height=vh*dpr}
@@ -87,12 +87,12 @@ function newGame(){
     for(let y=~~(by-r-3);y<=by+r+3;y++)for(let x=~~(bx-r-3);x<=bx+r+3;x++){if(x<0||y<0||x>=COLS||y>=COLS)continue;
       const d=Math.hypot(x-bx,y-by)+Math.sin(x*0.9+y*0.7)*1.2;
       if(d<r)terr[y*COLS+x]=kind;else if(ring!=null&&d<r+2.5&&terr[y*COLS+x]===MEADOW&&Math.random()<.8)terr[y*COLS+x]=ring}}};
-  blob(9,4,9,SCREE);blob(8,3,7,BOG);blob(10,3,8,WATER,BOG);
+  blob(27,4,10,SCREE);blob(24,3,8,BOG);blob(30,3,9,WATER,BOG);
   // old roads wander across the map
-  for(let k=0;k<4;k++){let x=k%2?0:rnd(10,COLS-10),y=k%2?rnd(10,COLS-10):0,a=k%2?0:Math.PI/2;
+  for(let k=0;k<10;k++){let x=k%2?0:rnd(10,COLS-10),y=k%2?rnd(10,COLS-10):0,a=k%2?0:Math.PI/2;
     for(let n=0;n<COLS*1.6;n++){a+=rnd(-.12,.12);x+=Math.cos(a);y+=Math.sin(a);if(x<0||y<0||x>=COLS||y>=COLS)break;
       for(const[ox,oy]of[[0,0],[1,0],[0,1]]){const tx=~~x+ox,ty=~~y+oy;if(tx<COLS&&ty<COLS&&terr[ty*COLS+tx]!==WATER)terr[ty*COLS+tx]=ROAD}}}
-  const blobs=[...Array(110)].map(()=>({x:rnd(0,COLS),y:rnd(0,COLS),r:rnd(3,11)}));
+  const blobs=[...Array(330)].map(()=>({x:rnd(0,COLS),y:rnd(0,COLS),r:rnd(3,11)}));
   for(let y=0;y<COLS;y++)for(let x=0;x<COLS;x++){const i=y*COLS+x;
     if(terr[i]!==MEADOW){grass[i]=0;continue}
     let g=0.2+Math.random()*0.15;
@@ -102,29 +102,29 @@ function newGame(){
   const far=(x,y,r)=>Math.hypot(x-c,y-c)>r,tt=(x,y)=>terr[tileAt(x,y)];
   const dry=(x,y)=>tt(x,y)!==WATER&&tt(x,y)!==ROAD;
   const rocks=[],posts=[],houses=[],trees=[];
-  for(let i=0;i<260;i++){const r={x:rnd(60,WORLD-60),y:rnd(60,WORLD-60),r:rnd(12,34)};
+  for(let i=0;i<780;i++){const r={x:rnd(60,WORLD-60),y:rnd(60,WORLD-60),r:rnd(12,34)};
     if(tt(r.x,r.y)!==SCREE&&Math.random()<.6)continue; // rocks gather on the scree
     r.big=r.r>=22;r.res=r.big?Math.round(r.r/4):0;if(far(r.x,r.y,130)&&dry(r.x,r.y))rocks.push(r)}
-  for(let k=0;k<60;k++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150),n=3+~~rnd(0,9);
+  for(let k=0;k<180;k++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150),n=3+~~rnd(0,9);
     for(let i=0;i<n;i++){const t={x:cx+rnd(-120,120),y:cy+rnd(-120,120),r:rnd(15,24),res:5};if(far(t.x,t.y,140)&&dry(t.x,t.y)&&tt(t.x,t.y)!==SCREE)trees.push(t)}}
-  for(let i=0;i<34;i++){let x=rnd(200,WORLD-200),y=rnd(200,WORLD-200);const a=Math.random()<.5?0:Math.PI/2,n=8+~~rnd(0,10);
+  for(let i=0;i<100;i++){let x=rnd(200,WORLD-200),y=rnd(200,WORLD-200);const a=Math.random()<.5?0:Math.PI/2,n=8+~~rnd(0,10);
     for(let k=0;k<n;k++){const px=x+Math.cos(a)*k*34,py=y+Math.sin(a)*k*34;if(dry(px,py))posts.push({x:px,y:py,r:6})}}
   // farm buildings sit beside the old roads
-  for(let i=0;i<400&&houses.length<18;i++){const x=rnd(300,WORLD-400),y=rnd(300,WORLD-400);
+  for(let i=0;i<1500&&houses.length<54;i++){const x=rnd(300,WORLD-400),y=rnd(300,WORLD-400);
     if(tt(x-30,y)===ROAD&&far(x,y,300)){const h={x:x,y:y,w:rnd(90,150),h:rnd(70,110),res:16};
       if(dry(h.x+10,h.y+10)&&dry(h.x+h.w-10,h.y+h.h-10)&&tt(h.x+h.w/2,h.y+h.h/2)!==WATER)houses.push(h)}}
   const wrecks=[];
-  for(let i=0;i<3000&&wrecks.length<26;i++){const x=rnd(100,WORLD-100),y=rnd(100,WORLD-100);if(tt(x,y)===ROAD&&far(x,y,300))wrecks.push({x,y,r:18,a:rnd(0,3.14),res:6,tractor:false})}
+  for(let i=0;i<12000&&wrecks.length<78;i++){const x=rnd(100,WORLD-100),y=rnd(100,WORLD-100);if(tt(x,y)===ROAD&&far(x,y,300))wrecks.push({x,y,r:18,a:rnd(0,3.14),res:6,tractor:false})}
   for(const h of houses){const x=h.x+h.w+30,y=h.y+h.h/2;if(dry(x,y))wrecks.push({x,y,r:20,a:rnd(0,3.14),res:8,tractor:true})}
   const strays=[];
-  for(let i=0;i<70;i++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150);if(!far(cx,cy,360)||tt(cx,cy)!==MEADOW){i--;continue}
+  for(let i=0;i<180;i++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150);if(!far(cx,cy,360)||tt(cx,cy)!==MEADOW){i--;continue}
     const n=1+~~rnd(0,3);for(let k=0;k<n;k++){const sx=cx+rnd(-40,40),sy=cy+rnd(-40,40);if(tt(sx,sy)!==WATER)strays.push(mkSheep(sx,sy,Math.random()<.2))}}
   S={t:DAY*0.12,terr,grass,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
-    folds:[],walls:[],decoys:[],traps:[],wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
+    folds:[],walls:[],decoys:[],traps:[],alerts:[],barrenShown:false,wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
     p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,dash:0,dashCd:0,cast:0,grazing:false,bob:0,still:0},
     wool:0,wood:0,stone:0,bleatCd:0,orbit:0,circling:false,
     spawnT:0,maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,circleShown:false,grazeShown:false,lastDay:1,shake:0};
-  mmx.fillStyle='#000';mmx.fillRect(0,0,COLS,COLS);
+  mmx.fillStyle='#000';mmx.fillRect(0,0,COLS,COLS);grid=null;
 }
 function mkSheep(x,y,ram){return{x,y,vx:0,vy:0,face:rnd(0,6.28),ram,fleece:rnd(2,5),wand:rnd(0,6.28),bob:rnd(0,9),seen:0}}
 
@@ -160,9 +160,15 @@ const tileAt=(x,y)=>{const tx=clamp(~~(x/T),0,COLS-1),ty=clamp(~~(y/T),0,COLS-1)
 function say(x,y,txt,col='#f4f2e6'){S.texts.push({x,y,txt,col,life:2.2})}
 let toastT=0;function toast(m,sec=3.5){const el=$('toast');el.textContent=m;el.hidden=false;toastT=sec}
 const circles=()=>S.rocks.concat(S.trees,S.walls,S.wrecks);
+const CELL=200;let grid=null;
+function solidsNear(x,y){
+  if(!grid){grid=new Map();for(const o of circles()){const k=(~~(o.x/CELL))*4096+~~(o.y/CELL);if(!grid.has(k))grid.set(k,[]);grid.get(k).push(o)}}
+  const cx=~~(x/CELL),cy=~~(y/CELL),out=[];
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const c=grid.get((cx+dx)*4096+cy+dy);if(c)out.push(...c)}
+  return out}
 function inHouse(o,h,rad){return o.x>h.x-rad&&o.x<h.x+h.w+rad&&o.y>h.y-rad&&o.y<h.y+h.h+rad}
 function collide(o,rad){
-  for(const r of circles()){const d=Math.hypot(o.x-r.x,o.y-r.y),m=r.r+rad;if(d<m&&d>0){o.x=r.x+(o.x-r.x)/d*m;o.y=r.y+(o.y-r.y)/d*m}}
+  for(const r of solidsNear(o.x,o.y)){const d=Math.hypot(o.x-r.x,o.y-r.y),m=r.r+rad;if(d<m&&d>0){o.x=r.x+(o.x-r.x)/d*m;o.y=r.y+(o.y-r.y)/d*m}}
   for(const h of S.houses){if(inHouse(o,h,rad)){
     const l=o.x-(h.x-rad),r=h.x+h.w+rad-o.x,t=o.y-(h.y-rad),b=h.y+h.h+rad-o.y,mn=Math.min(l,r,t,b);
     if(mn===l)o.x=h.x-rad;else if(mn===r)o.x=h.x+h.w+rad;else if(mn===t)o.y=h.y-rad;else o.y=h.y+h.h+rad}}
@@ -174,7 +180,9 @@ const isNight=()=>phase()>NIGHT_START;
 function nightness(){const ph=phase();
   if(ph<0.06)return 1-ph/0.06; if(ph<NIGHT_START-0.06)return 0;
   if(ph<NIGHT_START+0.02)return (ph-(NIGHT_START-0.06))/0.08; return 1}
-const vision=()=>(VIS_DAY+(VIS_NIGHT-VIS_DAY)*nightness())*(S.p.grazing?0.7:1);
+// more eyes in the flock see further, up to a point
+const vision=()=>{const n=S.flock.length,nt=nightness();
+  return (VIS_DAY+Math.min(120,n*5)+(VIS_NIGHT+Math.min(50,n*2)-VIS_DAY-Math.min(120,n*5))*nt)*(S.p.grazing?0.7:1)};
 function allSheep(){return [S.p,...S.flock]}
 function neighbours(s,r){let n=0;for(const o of allSheep())if(o!==s&&Math.hypot(o.x-s.x,o.y-s.y)<r)n++;return n}
 function rank(n){return n>=20?'Herd':n>=5?'Flock':'Stray'}
@@ -190,7 +198,7 @@ function explore(){
 }
 
 // charging into trees, buildings, big rocks and wrecks. What you can break depends on your horns.
-const bonus=()=>S.horns>=2?1:0;
+const bonus=()=>(S.horns>=2?1:0)+Math.floor(S.flock.length/5); // the flock pitches in
 function chargeHit(p){
   for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+bonus());t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
     if(t.res<=0){S.trees.splice(S.trees.indexOf(t),1);S.stumps.push({x:t.x,y:t.y});say(t.x,t.y-30,'Timber!','#c89a5c')}return}}
@@ -200,12 +208,13 @@ function chargeHit(p){
     if(r.res<=0){S.rocks.splice(S.rocks.indexOf(r),1);S.rubble.push({x:r.x,y:r.y,w:22,h:22,stone:1})}return}}
   for(const k of S.wrecks){if(Math.hypot(p.x-k.x,p.y-k.y)<k.r+22){
     if(S.horns<2){bonk(p,k.x,k.y,'Clang! Your horns just bounce off.','#e05a4a');if(!S.metalShown){S.metalShown=true;toast('Old machines hold metal, but you need Stone-tipped Horns to break into them.')}return}
-    const g=Math.min(k.res,1+~~rnd(0,2)+(S.horns>=3?1:0));k.res-=g;S.metal+=g;bonk(p,k.x,k.y,`+${g} metal`,'#9fb4c4');
+    const g=Math.min(k.res,1+~~rnd(0,2)+(S.horns>=3?1:0)+Math.floor(S.flock.length/5));k.res-=g;S.metal+=g;bonk(p,k.x,k.y,`+${g} metal`,'#9fb4c4');
     if(k.res<=0){S.wrecks.splice(S.wrecks.indexOf(k),1);S.rubble.push({x:k.x-15,y:k.y-10,w:30,h:20,metal:1});say(k.x,k.y-30,'Stripped for scrap!','#9fb4c4')}return}}
   for(const h of S.houses){if(inHouse(p,h,20)){const g=Math.min(h.res,2+~~rnd(0,2)+bonus()*2);h.res-=g;S.wood+=g;bonk(p,h.x+h.w/2,h.y+h.h/2,`+${g} wood`,'#c89a5c');
     if(h.res<=0){S.houses.splice(S.houses.indexOf(h),1);S.rubble.push(h);say(h.x+h.w/2,h.y,'The old barn comes down!','#c89a5c')}return}}
 }
 function bonk(p,x,y,txt,col){
+  grid=null;
   p.dash=0;const a=Math.atan2(p.y-y,p.x-x);p.vx=Math.cos(a)*220;p.vy=Math.sin(a)*220;S.shake=0.25;say(p.x,p.y-34,txt,col);
 }
 
@@ -255,6 +264,7 @@ function build(id){
   const fx=p.x+Math.cos(p.face)*60,fy=p.y+Math.sin(p.face)*60;
   if(['wall','decoy','trap'].includes(id)&&terrAt(fx,fy)===WATER){toast('You can\'t build on water.',2);return}
   for(const[k,v]of Object.entries(r.cost))S[k]-=v;
+  grid=null;
   if(id==='shelter'){const f=shelterHere();
     if(!f){S.folds.push({x:p.x,y:p.y,r:85,tier:1,hp:SHELTERS[1].hp,max:SHELTERS[1].hp});say(p.x,p.y-40,'A pen! Everyone in.','#9cbf6a')}
     else{f.tier++;f.hp=f.max=SHELTERS[f.tier].hp;say(p.x,p.y-40,`${SHELTERS[f.tier].name}!`,'#9cbf6a')}}
@@ -320,17 +330,23 @@ function update(dt){
   if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Flossy has rolled onto her back. A flockmate nearby helps her up faster.')}
   // hunger and grazing
   const sh=shelterHere();
-  p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.004)*(sh&&sh.tier>=2?0.6:1);
+  p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.008)*(sh&&sh.tier>=2?0.6:1);
   if(sh&&sh.tier>=4&&p.still>1)p.health+=dt*2;
-  if(p.grazing){const i=tileAt(p.x,p.y),g=S.grass[i];if(g>0.05){const e=Math.min(g,dt*0.22);S.grass[i]-=e;p.hunger+=e*26}
+  if(p.grazing){
+    // every sheep eats its own patch, and the hunger bar is the whole flock's
+    let eaten=0;for(const s of allSheep()){const i=tileAt(s.x,s.y),g=S.grass[i];if(g>0.05){const e=Math.min(g,dt*0.08);S.grass[i]-=e;eaten+=e}}
+    p.hunger+=eaten*42/(S.flock.length+1);
+    if(S.flock.length>=3&&eaten<dt*0.08*(S.flock.length+1)*0.3&&!S.barrenShown){S.barrenShown=true;toast('This pasture is grazed bare. Grass takes many days to grow back, so move the flock on.',4.5)}
     if(isNight()&&!S.grazeShown&&!inFold(p)){S.grazeShown=true;toast('Heads down. While the flock grazes it spreads out and can\'t see the wolves coming.')}}
   p.hunger=clamp(p.hunger,0,100);
   if(p.hunger<=0)p.health-=dt*6;else if(p.hunger>50)p.health+=dt*1.2;
   p.health=Math.min(100,p.health);
-  for(let i=0;i<S.grass.length;i++)if(S.grass[i]<1&&S.terr[i]===MEADOW)S.grass[i]=Math.min(1,S.grass[i]+dt*0.004);
+  // regrowth is slow, and bare earth is slowest of all to recover
+  for(let i=0;i<S.grass.length;i++){const g=S.grass[i];if(g<1&&S.terr[i]===MEADOW)S.grass[i]=Math.min(1,g+dt*(g<0.05?0.0003:0.0008))}
 
   // strays wander and join
   for(let i=S.strays.length-1;i>=0;i--){const s=S.strays[i];s.seen-=dt;
+    if(Math.abs(s.x-p.x)>1400||Math.abs(s.y-p.y)>1400){s.fleece+=dt*0.01;continue}
     s.wand+=rnd(-1,1)*dt;const sp=Math.random()<0.5?14:0;
     s.vx=Math.cos(s.wand)*sp;s.vy=Math.sin(s.wand)*sp;moveBy(s,dt);if(sp)s.face=s.wand;collide(s,12);
     s.fleece+=dt*0.01;
@@ -352,6 +368,10 @@ function update(dt){
       const want=(40+Math.sqrt(fl.length)*14)*(p.grazing?1.9:1)*(inFold(p)?0.6:1);
       if(d>want){ax+=dx/d*(d-want)*5;ay+=dy/d*(d-want)*5}
     }
+    // while grazing, a sheep on a bare patch shuffles to the greenest patch beside it
+    if(p.grazing&&S.grass[tileAt(s.x,s.y)]<0.15){let bx=0,by=0,bg=0.15;
+      for(const[ox,oy]of[[-T,0],[T,0],[0,-T],[0,T],[-T,-T],[T,T],[-T,T],[T,-T]]){const g=S.grass[tileAt(s.x+ox,s.y+oy)];if(g>bg){bg=g;bx=ox;by=oy}}
+      if(bg>0.15){ax+=bx*5;ay+=by*5}}
     for(const o of fl){if(o===s)continue;const ox=s.x-o.x,oy=s.y-o.y,od=Math.hypot(ox,oy);if(od<24&&od>0){ax+=ox/od*(24-od)*9;ay+=oy/od*(24-od)*9}}
     const pd=Math.hypot(s.x-p.x,s.y-p.y);if(pd<30&&pd>0){ax+=(s.x-p.x)/pd*(30-pd)*9;ay+=(s.y-p.y)/pd*(30-pd)*9}
     if(!S.circling&&!p.grazing)for(const w of S.preds){const wd=Math.hypot(s.x-w.x,s.y-w.y);if(wd<140&&wd>0){ax+=(s.x-w.x)/wd*120;ay+=(s.y-w.y)/wd*120}}
@@ -359,7 +379,6 @@ function update(dt){
     const v=Math.hypot(s.vx,s.vy),max=s.charge>0?420:(S.circling?280:205)*(1-Math.max(0,s.fleece-5)*0.06);if(v>max){s.vx*=max/v;s.vy*=max/v}
     moveBy(s,dt);if(v>15){s.face=Math.atan2(s.vy,s.vx);s.bob+=dt*12}
     collide(s,12);
-    if(v<20){const i=tileAt(s.x,s.y);S.grass[i]=Math.max(0,S.grass[i]-dt*0.05)}
     s.fleece=Math.min(9,s.fleece+dt*0.03);
     if(s.ram&&p.dash>0.2&&!s.charge){const t=nearestPred(s,260);if(t){s.charge=0.5;const a=Math.atan2(t.y-s.y,t.x-s.x);s.vx=Math.cos(a)*420;s.vy=Math.sin(a)*420}}
     if(s.charge>0){s.charge-=dt;if(s.charge<=0)s.charge=0}
@@ -367,7 +386,7 @@ function update(dt){
   S.maxFlock=Math.max(S.maxFlock,fl.length+1);
 
   // wolves
-  if(isNight()){S.spawnT-=dt;const cap=2+S.day*2;
+  if(isNight()){S.spawnT-=dt*(1+S.flock.length/12);const cap=2+S.day*2+Math.floor(S.flock.length/4);
     if(S.spawnT<=0&&S.preds.length<cap){S.spawnT=Math.max(2.5,8-S.day);
       const a=rnd(0,6.28),r=rnd(480,620);const w={x:clamp(p.x+Math.cos(a)*r,20,WORLD-20),y:clamp(p.y+Math.sin(a)*r,20,WORLD-20),vx:0,vy:0,state:'hunt',st:0,face:0,orb:rnd(0,6.28),bite:0};
       S.preds.push(w);if(S.preds.length===1)toast('Eyes in the dark. Keep moving, and keep the flock close.')}}
@@ -410,9 +429,13 @@ function update(dt){
     for(const f of S.folds){const d=Math.hypot(w.x-f.x,w.y-f.y);if(d<f.r+14&&d>0){w.x=f.x+(w.x-f.x)/d*(f.r+14);w.y=f.y+(w.y-f.y)/d*(f.r+14)}}if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,12);
     for(const h of [p,...S.flock.filter(s=>s.charge>0)]){if((h===p?p.dash>0:true)&&Math.hypot(h.x-w.x,h.y-w.y)<34&&w.state!=='stun'){
       const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=[1.2,1.5,1.9,2.6][S.horns];say(w.x,w.y-24,'Headbutt!','#e6b422')}}
+    if(S.flock.length>=10&&w.state==='hunt'&&!w.warned&&pdist<380&&pdist>vision()){w.warned=true;
+      const dir=['east','south-east','south','south-west','west','north-west','north','north-east'][((Math.round(Math.atan2(w.y-p.y,w.x-p.x)/(Math.PI/4))%8)+8)%8];
+      say(p.x,p.y-48,`Wolf to the ${dir}!`,'#e05a4a');S.alerts.push({w,t:2.5})}
     if(w.state==='flee'&&pdist>950)S.preds.splice(i,1);
   }
   for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];t.life-=dt;t.y-=dt*14;if(t.life<=0)S.texts.splice(i,1)}
+  for(let i=S.alerts.length-1;i>=0;i--){S.alerts[i].t-=dt;if(S.alerts[i].t<=0)S.alerts.splice(i,1)}
   for(let i=S.pings.length-1;i>=0;i--){S.pings[i].t+=dt;if(S.pings[i].t>1.4)S.pings.splice(i,1)}
   S.shake=Math.max(0,S.shake-dt);
   const n=fl.length+1;
@@ -540,6 +563,8 @@ function draw(){
   if(nt>0.3){for(const w of S.preds){const d=Math.hypot(w.x-p.x,w.y-p.y);if(d<vr+10||d>EYES_RANGE)continue;
     const x=w.x-camx+Math.cos(w.face)*20,y=w.y-camy+Math.sin(w.face)*20,ox=-Math.sin(w.face)*3.5,oy=Math.cos(w.face)*3.5;
     ctx.fillStyle=`rgba(255,214,90,${(nt-0.3)*1.4*(1-d/EYES_RANGE*0.5)})`;ctx.beginPath();ctx.arc(x+ox,y+oy,2.3,0,7);ctx.arc(x-ox,y-oy,2.3,0,7);ctx.fill()}}
+  for(const al of S.alerts){const a=Math.atan2(al.w.y-p.y,al.w.x-p.x),rr=vr+26,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;
+    ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.globalAlpha=Math.min(1,al.t);ctx.fillStyle='#e05a4a';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.fill();ctx.restore()}
   // bleat: echo ring, and strays that answered show through the fog
   for(const pg of S.pings){const k=pg.t/1.4;ctx.strokeStyle=`rgba(230,180,34,${0.6*(1-k)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(pg.x-camx,pg.y-camy,k*BLEAT_RANGE,0,7);ctx.stroke()}
   for(const s of S.strays)if(s.seen>0&&!seen(s,10)){const x=s.x-camx,y=s.y-camy;if(!onScreen(x,y,10))continue;
@@ -580,9 +605,10 @@ function showIntro(){
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
   <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
   <li><kbd>Shift</kbd> or CHARGE to headbutt. At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
+  <li>A bigger flock sees further, helps you gather more with every charge, and from ten sheep a lookout warns you of wolves. It also gets hungrier and draws more wolves.</li>
   <li>Walk near a stray to recruit it. Their fleeces grow, and once you've made shears, press <kbd>F</kbd> or SHEAR near flockmates with a yellow dot to harvest wool.</li>
   <li>Wolves will attack a flock that stands still. With four or more flockmates, keep moving and they circle you, and the wolves can only pace around.</li>
-  <li>Grazing is slow, and while heads are down the flock spreads out and can't see far. Only green meadow has grass; scree, bog and old roads have none, bog slows you, and nothing crosses water.</li>
+  <li>When you graze, the whole flock grazes, so a big flock strips a pasture fast and grass takes many days to grow back. While heads are down the flock spreads out and can't see far. Only green meadow has grass; scree, bog and old roads have none, bog slows you, and nothing crosses water.</li>
   <li><kbd>C</kbd> or CRAFT to open the upgrade tree. Start with a Wooden Pen and a Ram-horn Helm. Wolves will chew through a weak pen, so upgrade it as you go: wool-lined, then drystone, then iron-gated.</li>
   <li>Your own fleece slows you down. Rub against rocks and posts to shed it, or you may get cast on your back.</li></ul>
   <button id="go" type="button">Leave the field</button>`;
