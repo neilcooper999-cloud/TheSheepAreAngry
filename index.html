@@ -32,11 +32,13 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .card li{margin-bottom:.25rem}
 .card kbd{font:500 12px var(--mono);background:#36422b;padding:1px 6px;border-radius:4px}
 .card button{margin-top:10px;font:800 16px/1 var(--display);background:var(--tag);color:#2b2300;border:0;border-radius:6px;padding:12px 20px;cursor:pointer}
-.recipes{display:grid;gap:8px;margin:.8rem 0}
+.recipes{display:grid;gap:8px;margin:0 0 .4rem}
 .rec{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:#2c3723;border-radius:8px;padding:10px 12px}
 .rec>div{min-width:0}.rec p{margin:.15rem 0;font-size:13px;color:#d8d4c0}.rec b{font:800 15px/1.2 var(--display)}
 .rk{font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--moss);margin-bottom:3px}
 .rc{font:500 11px var(--mono);color:var(--tag)}
+.rec.locked{opacity:.55}.rec.locked .rc{color:#c9c3a8}.rec.done .rc{color:var(--moss)}
+.card h2.trk{font:800 13px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--rust);margin:1rem 0 .4rem}
 .card .rec button{margin:0;padding:9px 14px;font-size:14px}
 .card button:disabled{background:#4a5440;color:#8c947f;cursor:not-allowed}
 .card button.ghost{background:none;color:var(--ink);border:1px solid #55634a}
@@ -53,7 +55,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
   <div class="row"><span>Health</span><div class="bar"><i id="bHealth" style="background:#e05a4a"></i></div><span id="vHealth">100</span></div>
   <div class="row"><span>Fleece</span><div class="bar"><i id="bFleece" style="background:#f4f2e6"></i></div><span id="vFleece">2kg</span></div>
   <div class="row"><span>Flock</span><span id="vFlock">1 sheep</span><span id="vReady"></span></div>
-  <div class="stores"><span>Wool <b id="vWool">0</b></span><span>Wood <b id="vWood">0</b></span><span>Stone <b id="vStone">0</b></span></div>
+  <div class="stores"><span>Wool <b id="vWool">0</b></span><span>Wood <b id="vWood">0</b></span><span>Stone <b id="vStone">0</b></span><span>Metal <b id="vMetal">0</b></span></div>
 </div>
 <div id="btns">
   <button id="bBleat" type="button">BLEAT<span>B</span></button><button id="bShear" type="button">SHEAR<span>F</span></button>
@@ -111,11 +113,14 @@ function newGame(){
   for(let i=0;i<400&&houses.length<18;i++){const x=rnd(300,WORLD-400),y=rnd(300,WORLD-400);
     if(tt(x-30,y)===ROAD&&far(x,y,300)){const h={x:x,y:y,w:rnd(90,150),h:rnd(70,110),res:16};
       if(dry(h.x+10,h.y+10)&&dry(h.x+h.w-10,h.y+h.h-10)&&tt(h.x+h.w/2,h.y+h.h/2)!==WATER)houses.push(h)}}
+  const wrecks=[];
+  for(let i=0;i<3000&&wrecks.length<26;i++){const x=rnd(100,WORLD-100),y=rnd(100,WORLD-100);if(tt(x,y)===ROAD&&far(x,y,300))wrecks.push({x,y,r:18,a:rnd(0,3.14),res:6,tractor:false})}
+  for(const h of houses){const x=h.x+h.w+30,y=h.y+h.h/2;if(dry(x,y))wrecks.push({x,y,r:20,a:rnd(0,3.14),res:8,tractor:true})}
   const strays=[];
   for(let i=0;i<70;i++){const cx=rnd(150,WORLD-150),cy=rnd(150,WORLD-150);if(!far(cx,cy,360)||tt(cx,cy)!==MEADOW){i--;continue}
     const n=1+~~rnd(0,3);for(let k=0;k<n;k++){const sx=cx+rnd(-40,40),sy=cy+rnd(-40,40);if(tt(sx,sy)!==WATER)strays.push(mkSheep(sx,sy,Math.random()<.2))}}
   S={t:DAY*0.12,terr,grass,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
-    folds:[],walls:[],decoys:[],traps:[],helm:false,
+    folds:[],walls:[],decoys:[],traps:[],wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
     p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,dash:0,dashCd:0,cast:0,grazing:false,bob:0,still:0},
     wool:0,wood:0,stone:0,bleatCd:0,orbit:0,circling:false,
     spawnT:0,maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,circleShown:false,grazeShown:false,lastDay:1,shake:0};
@@ -154,7 +159,7 @@ function inputVec(){
 const tileAt=(x,y)=>{const tx=clamp(~~(x/T),0,COLS-1),ty=clamp(~~(y/T),0,COLS-1);return ty*COLS+tx};
 function say(x,y,txt,col='#f4f2e6'){S.texts.push({x,y,txt,col,life:2.2})}
 let toastT=0;function toast(m,sec=3.5){const el=$('toast');el.textContent=m;el.hidden=false;toastT=sec}
-const circles=()=>S.rocks.concat(S.trees,S.walls);
+const circles=()=>S.rocks.concat(S.trees,S.walls,S.wrecks);
 function inHouse(o,h,rad){return o.x>h.x-rad&&o.x<h.x+h.w+rad&&o.y>h.y-rad&&o.y<h.y+h.h+rad}
 function collide(o,rad){
   for(const r of circles()){const d=Math.hypot(o.x-r.x,o.y-r.y),m=r.r+rad;if(d<m&&d>0){o.x=r.x+(o.x-r.x)/d*m;o.y=r.y+(o.y-r.y)/d*m}}
@@ -184,48 +189,84 @@ function explore(){
       mmx.fillStyle=tr===WATER?'#2c5470':tr===SCREE?'#7d7a6c':tr===BOG?'#3a422a':tr===ROAD?'#4a4a46':`rgb(${~~(90-g*45)},${~~(80+g*55)},${~~(50-g*15)})`;mmx.fillRect(x,y,1,1)}}
 }
 
-// charging into trees, buildings and big rocks
+// charging into trees, buildings, big rocks and wrecks. What you can break depends on your horns.
+const bonus=()=>S.horns>=2?1:0;
 function chargeHit(p){
-  for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+(S.helm?1:0));t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
+  for(const t of S.trees){if(Math.hypot(p.x-t.x,p.y-t.y)<t.r+20){const g=Math.min(t.res,1+~~rnd(0,2)+bonus());t.res-=g;S.wood+=g;bonk(p,t.x,t.y,`+${g} wood`,'#c89a5c');
     if(t.res<=0){S.trees.splice(S.trees.indexOf(t),1);S.stumps.push({x:t.x,y:t.y});say(t.x,t.y-30,'Timber!','#c89a5c')}return}}
-  for(const r of S.rocks){if(r.big&&Math.hypot(p.x-r.x,p.y-r.y)<r.r+20){const g=Math.min(r.res,1+~~rnd(0,2)+(S.helm?1:0));r.res-=g;S.stone+=g;r.r=Math.max(12,r.r-3);bonk(p,r.x,r.y,`+${g} stone`,'#c9c6bb');
+  for(const r of S.rocks){if(r.big&&Math.hypot(p.x-r.x,p.y-r.y)<r.r+20){
+    if(S.horns<1){bonk(p,r.x,r.y,'Ow! Too hard for a bare head.','#e05a4a');if(!S.stoneShown){S.stoneShown=true;toast('Rock is too hard to break with your head. Craft a Ram-horn Helm from wood first.')}return}
+    const g=Math.min(r.res,1+~~rnd(0,2)+bonus());r.res-=g;S.stone+=g;r.r=Math.max(12,r.r-3);bonk(p,r.x,r.y,`+${g} stone`,'#c9c6bb');
     if(r.res<=0){S.rocks.splice(S.rocks.indexOf(r),1);S.rubble.push({x:r.x,y:r.y,w:22,h:22,stone:1})}return}}
-  for(const h of S.houses){if(inHouse(p,h,20)){const g=Math.min(h.res,2+~~rnd(0,2)+(S.helm?2:0));h.res-=g;S.wood+=g;bonk(p,h.x+h.w/2,h.y+h.h/2,`+${g} wood`,'#c89a5c');
+  for(const k of S.wrecks){if(Math.hypot(p.x-k.x,p.y-k.y)<k.r+22){
+    if(S.horns<2){bonk(p,k.x,k.y,'Clang! Your horns just bounce off.','#e05a4a');if(!S.metalShown){S.metalShown=true;toast('Old machines hold metal, but you need Stone-tipped Horns to break into them.')}return}
+    const g=Math.min(k.res,1+~~rnd(0,2)+(S.horns>=3?1:0));k.res-=g;S.metal+=g;bonk(p,k.x,k.y,`+${g} metal`,'#9fb4c4');
+    if(k.res<=0){S.wrecks.splice(S.wrecks.indexOf(k),1);S.rubble.push({x:k.x-15,y:k.y-10,w:30,h:20,metal:1});say(k.x,k.y-30,'Stripped for scrap!','#9fb4c4')}return}}
+  for(const h of S.houses){if(inHouse(p,h,20)){const g=Math.min(h.res,2+~~rnd(0,2)+bonus()*2);h.res-=g;S.wood+=g;bonk(p,h.x+h.w/2,h.y+h.h/2,`+${g} wood`,'#c89a5c');
     if(h.res<=0){S.houses.splice(S.houses.indexOf(h),1);S.rubble.push(h);say(h.x+h.w/2,h.y,'The old barn comes down!','#c89a5c')}return}}
 }
 function bonk(p,x,y,txt,col){
   p.dash=0;const a=Math.atan2(p.y-y,p.x-x);p.vx=Math.cos(a)*220;p.vy=Math.sin(a)*220;S.shake=0.25;say(p.x,p.y-34,txt,col);
 }
 
+// shelter upgrade tree: each tier is built on top of the last, in place
+const SHELTERS=[null,
+  {name:'Wooden Pen',hp:100,cost:{wood:12},text:'A ring of hurdles knocked together from scrap wood. Wolves can\'t get in at first, but they will chew through it.'},
+  {name:'Wool-lined Pen',hp:240,cost:{wood:6,wool:8},need:()=>S.shears>=1,needText:'Needs Flint Shears',text:'Fleece packed into every gap. Much tougher, and the flock inside stays warm, so hunger drops more slowly.'},
+  {name:'Drystone Fold',hp:520,cost:{stone:16,wool:4},need:()=>S.horns>=1,needText:'Needs a Ram-horn Helm',text:'A proper sheepfold of stacked stone. Wolves will be at it all night.'},
+  {name:'Iron-gated Steading',hp:Infinity,cost:{metal:8,stone:6},need:()=>S.horns>=2,needText:'Needs Stone-tipped Horns',text:'Stone walls and a gate of farm iron. Wolves can\'t break it, and Bramble slowly heals while resting inside.'}];
 const RECIPES=[
-  {id:'fold',kind:'Shelter',name:'Wool-lined Fold',cost:{wood:10,wool:6},text:'A ring of hurdles stuffed with fleece, built around you. Wolves can\'t get in, and sheep inside can graze in peace.'},
-  {id:'wall',kind:'Defence',name:'Drystone Baa-rier',cost:{stone:6},text:'A row of stones set across the way ahead of you. Nothing gets over it, wolf or sheep.'},
-  {id:'decoy',kind:'Defence',name:'Ewe-sual Suspect',cost:{wood:2,wool:4},text:'A fake sheep made of sticks and fleece. Wolves go for it first, and it takes them three bites to notice.'},
-  {id:'trap',kind:'Attack',name:'Dag Trap',cost:{wool:3,stone:1},text:'A heap of the mucky, matted wool from a sheep\'s back end. A wolf that steps in it is stuck fast, then gives up and leaves.'},
-  {id:'helm',kind:'Attack',name:'Ram-horn Helm',cost:{wood:4,stone:6},text:'Curled stone horns lashed on with wool. Charge twice as often, stun wolves for longer and break things faster.',once:true}];
+  {id:'horns1',track:'Horns',tier:1,name:'Ram-horn Helm',cost:{wood:6},text:'Curled horns carved from hardwood. Lets you break big rocks for stone.',done:()=>S.horns>=1},
+  {id:'horns2',track:'Horns',tier:2,name:'Stone-tipped Horns',cost:{wood:4,stone:8},need:()=>S.horns>=1,needText:'Needs a Ram-horn Helm',text:'Flint chipped to a point. Lets you break old cars and tractors for metal, and you gather more from every charge.',done:()=>S.horns>=2},
+  {id:'horns3',track:'Horns',tier:3,name:'Iron-shod Horns',cost:{metal:6,stone:4},need:()=>S.horns>=2,needText:'Needs Stone-tipped Horns',text:'Horns capped with tractor iron. Charge twice as often and leave wolves dazed for longer.',done:()=>S.horns>=3},
+  {id:'shears1',track:'Tools',tier:1,name:'Flint Shears',cost:{stone:4,wood:2},need:()=>S.horns>=1,needText:'Needs a Ram-horn Helm',text:'Two sharp flints on a wooden hinge. Lets you shear your flock for wool.',done:()=>S.shears>=1},
+  {id:'shears2',track:'Tools',tier:2,name:'Iron Shears',cost:{metal:4},need:()=>S.shears>=1&&S.horns>=2,needText:'Needs Flint Shears and Stone-tipped Horns',text:'Proper blades. Shear the whole flock from further away and get half as much wool again.',done:()=>S.shears>=2},
+  {id:'decoy',track:'Defence',name:'Ewe-sual Suspect',cost:{wood:3,wool:3},need:()=>S.shears>=1,needText:'Needs Flint Shears',text:'A fake sheep of sticks and fleece. Wolves go for it first, and it takes them three bites to notice.'},
+  {id:'wall',track:'Defence',name:'Drystone Baa-rier',cost:{stone:6},need:()=>S.horns>=1,needText:'Needs a Ram-horn Helm',text:'A row of stones set across the way ahead of you. Nothing gets over it, wolf or sheep.'},
+  {id:'trap',track:'Defence',name:'Dag Trap',cost:{wool:3,stone:1},need:()=>S.shears>=1,needText:'Needs Flint Shears',text:'A heap of the mucky, matted wool from a sheep\'s back end. A wolf that steps in it is stuck fast, then gives up and leaves.'}];
 const canPay=c=>Object.entries(c).every(([k,v])=>S[k]>=v);
 const costText=c=>Object.entries(c).map(([k,v])=>`${v} ${k}`).join(' · ');
+const shelterHere=()=>S.folds.find(f=>Math.hypot(S.p.x-f.x,S.p.y-f.y)<f.r);
+function shelterRecipes(){
+  const f=shelterHere(),out=[];
+  if(!f){const t=SHELTERS[1];out.push({id:'shelter',track:'Shelter',tier:1,name:t.name,cost:t.cost,text:t.text+' Built around where you stand.',label:'Build'});return out}
+  const next=SHELTERS[f.tier+1];
+  if(next)out.push({id:'shelter',track:'Shelter',tier:f.tier+1,name:next.name,cost:next.cost,need:next.need,needText:next.needText,text:next.text+` Upgrades the ${SHELTERS[f.tier].name} you're standing in.`,label:'Upgrade'});
+  else out.push({id:'none',track:'Shelter',tier:4,name:SHELTERS[4].name,cost:{},text:SHELTERS[4].text,done:()=>true});
+  if(f.hp<f.max)out.push({id:'repair',track:'Shelter',name:'Patch it up',cost:f.tier>=3?{stone:4}:{wood:4},text:`Repairs this ${SHELTERS[f.tier].name} by a third. It's at ${Math.ceil(f.hp)} of ${f.max}.`,label:'Repair'});
+  return out;
+}
 function showCraft(){
-  card.innerHTML=`<div class="eb">Craft · you have ${~~S.wool} wool, ${S.wood} wood, ${S.stone} stone</div><h1>Flock <span>works</span></h1>
-  <div class="recipes">${RECIPES.map(r=>{const done=r.once&&S.helm,ok=canPay(r.cost)&&!done;
-    return `<div class="rec"><div><div class="rk">${r.kind}</div><b>${r.name}</b><p>${r.text}</p><div class="rc">${done?'Already wearing it':costText(r.cost)}</div></div>
-    <button type="button" data-id="${r.id}" ${ok?'':'disabled'}>Build</button></div>`}).join('')}</div>
+  const all=[...shelterRecipes(),...RECIPES],tracks=['Shelter','Horns','Tools','Defence'];
+  card.innerHTML=`<div class="eb">Craft · ${~~S.wool} wool · ${S.wood} wood · ${S.stone} stone · ${S.metal} metal</div><h1>Flock <span>works</span></h1>
+  ${tracks.map(tk=>`<h2 class="trk">${tk}</h2><div class="recipes">${all.filter(r=>r.track===tk).map(r=>{
+    const done=r.done&&r.done(),locked=!done&&r.need&&!r.need(),ok=!done&&!locked&&canPay(r.cost);
+    const status=done?'Done':locked?r.needText:costText(r.cost);
+    return `<div class="rec${locked?' locked':''}${done?' done':''}"><div><div class="rk">${r.tier?'Tier '+r.tier:tk}</div><b>${r.name}</b><p>${r.text}</p><div class="rc">${status}</div></div>
+    <button type="button" data-id="${r.id}" ${ok?'':'disabled'}>${done?'✓':r.label||'Build'}</button></div>`}).join('')}</div>`).join('')}
   <button id="close" type="button" class="ghost">Back to the field</button>`;
   ov.hidden=false;
   card.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{build(b.dataset.id);closeCraft()});
-  $('close').onclick=closeCraft;$('close').focus();
+  $('close').onclick=closeCraft;$('close').focus({preventScroll:true});ov.scrollTop=0;
 }
 function closeCraft(){ov.hidden=true;last=performance.now()}
 function build(id){
-  const r=RECIPES.find(x=>x.id===id),p=S.p;if(!canPay(r.cost))return;
+  const p=S.p,r=[...shelterRecipes(),...RECIPES].find(x=>x.id===id);if(!r||!canPay(r.cost)||(r.need&&!r.need()))return;
   const fx=p.x+Math.cos(p.face)*60,fy=p.y+Math.sin(p.face)*60;
-  if(id!=='fold'&&id!=='helm'&&terrAt(fx,fy)===WATER){toast('You can\'t build on water.',2);return}
+  if(['wall','decoy','trap'].includes(id)&&terrAt(fx,fy)===WATER){toast('You can\'t build on water.',2);return}
   for(const[k,v]of Object.entries(r.cost))S[k]-=v;
-  if(id==='fold'){S.folds.push({x:p.x,y:p.y,r:90});say(p.x,p.y-40,'A safe fold!','#9cbf6a')}
+  if(id==='shelter'){const f=shelterHere();
+    if(!f){S.folds.push({x:p.x,y:p.y,r:85,tier:1,hp:SHELTERS[1].hp,max:SHELTERS[1].hp});say(p.x,p.y-40,'A pen! Everyone in.','#9cbf6a')}
+    else{f.tier++;f.hp=f.max=SHELTERS[f.tier].hp;say(p.x,p.y-40,`${SHELTERS[f.tier].name}!`,'#9cbf6a')}}
+  else if(id==='repair'){const f=shelterHere();f.hp=Math.min(f.max,f.hp+f.max/3);say(p.x,p.y-40,'Patched up.','#9cbf6a')}
+  else if(id==='horns1'){S.horns=1;say(p.x,p.y-40,'Horns on! Now for some rock.','#e6b422')}
+  else if(id==='horns2'){S.horns=2;say(p.x,p.y-40,'Stone-tipped! Metal next.','#e6b422')}
+  else if(id==='horns3'){S.horns=3;say(p.x,p.y-40,'Iron-shod!','#e6b422')}
+  else if(id==='shears1'){S.shears=1;say(p.x,p.y-40,'Snip snip.','#f4f2e6')}
+  else if(id==='shears2'){S.shears=2;say(p.x,p.y-40,'Proper shears!','#f4f2e6')}
   else if(id==='wall'){const a=p.face+Math.PI/2;for(let k=-3;k<3;k++){const x=fx+Math.cos(a)*(k+0.5)*24,y=fy+Math.sin(a)*(k+0.5)*24;if(terrAt(x,y)!==WATER)S.walls.push({x,y,r:12})}say(fx,fy-24,'Stone on stone.','#c9c6bb')}
   else if(id==='decoy'){S.decoys.push({x:fx,y:fy,hp:3,decoy:true});say(fx,fy-24,'Baa? (it says nothing)','#e0835a')}
   else if(id==='trap'){S.traps.push({x:fx,y:fy});say(fx,fy-24,'Lovely.','#c89a5c')}
-  else if(id==='helm'){S.helm=true;say(p.x,p.y-40,'Horns on!','#e6b422')}
 }
 function bleat(){
   const p=S.p;S.bleatCd=4;S.pings.push({x:p.x,y:p.y,t:0});say(p.x,p.y-34,'BAAAAA!','#e6b422');
@@ -238,7 +279,9 @@ function bleat(){
 }
 function shear(){
   const p=S.p;let got=0,n=0;
-  for(const s of S.flock){if(s.fleece>=4&&Math.hypot(s.x-p.x,s.y-p.y)<110){const w=s.fleece-1.5;got+=w;n++;s.fleece=1.5;say(s.x,s.y-22,'snip','#f4f2e6')}}
+  if(S.shears<1){toast('You have nothing to shear with. Flint Shears need stone, and stone needs a Ram-horn Helm.',3);return}
+  const reach=S.shears>=2?180:110,mult=S.shears>=2?1.5:1;
+  for(const s of S.flock){if(s.fleece>=4&&Math.hypot(s.x-p.x,s.y-p.y)<reach){const w=(s.fleece-1.5)*mult;got+=w;n++;s.fleece=1.5;say(s.x,s.y-22,'snip','#f4f2e6')}}
   if(n){S.wool+=got;say(p.x,p.y-34,`+${got.toFixed(1)} wool`,'#f4f2e6')}
   else toast(S.flock.length?'No fleece is ready yet. Fleeces are ready at 4 kg (shown by a yellow dot).':'You need a flock to shear.',2.5);
 }
@@ -255,7 +298,7 @@ function update(dt){
   let spd=150*(1-Math.min(0.55,heavy*0.075));
   p.grazing=(keys[' ']||keys['g']||grazeBtn)&&p.cast<=0;
   if(p.cast>0){p.cast-=dt;if(neighbours(p,55)>0)p.cast-=dt*2;if(p.cast<=0)say(p.x,p.y-30,'Back on my feet!');}
-  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=S.helm?1.1:2.2;say(p.x,p.y-30,'Baaa!','#e6b422')}
+  if((keys['shift']||keys['e']||chargeReq)&&p.dashCd<=0&&p.cast<=0){p.dash=0.28;p.dashCd=[2.2,2,1.8,1.1][S.horns];say(p.x,p.y-30,'Baaa!','#e6b422')}
   chargeReq=false;p.dashCd-=dt;
   S.bleatCd-=dt;if(bleatReq&&S.bleatCd<=0)bleat();bleatReq=false;
   if(shearReq)shear();shearReq=false;
@@ -272,11 +315,13 @@ function update(dt){
   let rubbing=false;
   if(moving&&p.dash<=0){for(const r of S.rocks.concat(S.posts)){if(Math.hypot(p.x-r.x,p.y-r.y)<r.r+16){rubbing=true;break}}}
   collide(p,14);
-  if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;S.wool+=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
+  if(rubbing&&p.fleece>1){const d=Math.min(p.fleece-1,2.2*dt);p.fleece-=d;if(Math.random()<dt*3)say(p.x+rnd(-10,10),p.y-20,'scritch','#c9c3a8')}
   p.fleece+=dt*0.035;
   if(p.fleece>7&&moving&&p.cast<=0&&p.dash<=0&&Math.random()<dt*0.04*(p.fleece-7)){p.cast=3;toast('Cast! Too much fleece, and Bramble has rolled onto her back. A flockmate nearby helps her up faster.')}
   // hunger and grazing
-  p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.004);
+  const sh=shelterHere();
+  p.hunger-=dt*(0.42+heavy*0.04+S.flock.length*0.004)*(sh&&sh.tier>=2?0.6:1);
+  if(sh&&sh.tier>=4&&p.still>1)p.health+=dt*2;
   if(p.grazing){const i=tileAt(p.x,p.y),g=S.grass[i];if(g>0.05){const e=Math.min(g,dt*0.22);S.grass[i]-=e;p.hunger+=e*26}
     if(isNight()&&!S.grazeShown&&!inFold(p)){S.grazeShown=true;toast('Heads down. While the flock grazes it spreads out and can\'t see the wolves coming.')}}
   p.hunger=clamp(p.hunger,0,100);
@@ -341,13 +386,19 @@ function update(dt){
       let best=null,bs=1e9;
       for(const dc of S.decoys){const d=Math.hypot(dc.x-w.x,dc.y-w.y);if(d<500&&d*0.5<bs){bs=d*0.5;best=dc}}
       for(const s of allSheep()){if(inFold(s))continue;const d=Math.hypot(s.x-w.x,s.y-w.y);const sc=d*(1+neighbours(s,90)*0.15);if(sc<bs){bs=sc;best=s}}
-      if((protectedNow&&pdist<420&&!(best&&best.decoy))||!best){
+      for(const f of S.folds){if(f.hp===Infinity||!allSheep().some(s=>Math.hypot(s.x-f.x,s.y-f.y)<f.r))continue;
+        const d=Math.hypot(w.x-f.x,w.y-f.y)||1,ex=f.x+(w.x-f.x)/d*(f.r+14),ey=f.y+(w.y-f.y)/d*(f.r+14),sc=Math.hypot(ex-w.x,ey-w.y)*0.9;
+        if(sc<bs){bs=sc;best={x:ex,y:ey,shelter:f}}}
+      if((protectedNow&&pdist<420&&!(best&&(best.decoy||best.shelter)))||!best){
         // a moving circle (or a closed fold): wolves pace around, waiting
         w.orb+=dt*0.7;const fd=S.folds.find(f=>Math.hypot(p.x-f.x,p.y-f.y)<f.r),ox=fd?fd.x:p.x,oy=fd?fd.y:p.y,orR=(fd?fd.r:R)+110;
         const gx=ox+Math.cos(w.orb)*orR,gy=oy+Math.sin(w.orb)*orR,gd=Math.hypot(gx-w.x,gy-w.y)||1;
         tx=(gx-w.x)/gd;ty=(gy-w.y)/gd;sp=Math.min(190,gd*3);
       }else{const d=Math.hypot(best.x-w.x,best.y-w.y)||1;tx=(best.x-w.x)/d;ty=(best.y-w.y)/d;sp=(140+S.day*5)*(p.grazing?1.2:1);
-        if(d<18&&w.bite<=0){
+        if(best.shelter&&d<24&&w.bite<=0){const f=best.shelter;f.hp-=6;w.bite=1.3;S.shake=0.1;say(w.x,w.y-22,'Crunch!','#e0835a');
+          if(f.hp<=0){S.folds.splice(S.folds.indexOf(f),1);S.rubble.push({x:f.x-f.r*0.7,y:f.y-f.r*0.7,w:f.r*1.4,h:f.r*1.4});toast(`The wolves broke through the ${SHELTERS[f.tier].name}!`)}
+          else if(f.hp<f.max*0.3&&!f.warned){f.warned=true;toast(`The ${SHELTERS[f.tier].name} is giving way. Patch it up from the craft menu.`)}}
+        else if(d<18&&w.bite<=0&&!best.shelter){
           if(best.decoy){best.hp--;w.bite=1;w.state='flee';w.st=3;say(best.x,best.y-22,best.hp>0?'Chomp... that tasted odd.':'The decoy falls apart. Just sticks and wool.','#e0835a');
             if(best.hp<=0)S.decoys.splice(S.decoys.indexOf(best),1)}
           else if(best===p){if(p.dash<=0){p.health-=25;say(p.x,p.y-30,'Ouch!','#e05a4a');w.bite=1.5;w.state='flee';w.st=1.5}}
@@ -358,7 +409,7 @@ function update(dt){
     moveBy(w,dt);
     for(const f of S.folds){const d=Math.hypot(w.x-f.x,w.y-f.y);if(d<f.r+14&&d>0){w.x=f.x+(w.x-f.x)/d*(f.r+14);w.y=f.y+(w.y-f.y)/d*(f.r+14)}}if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,12);
     for(const h of [p,...S.flock.filter(s=>s.charge>0)]){if((h===p?p.dash>0:true)&&Math.hypot(h.x-w.x,h.y-w.y)<34&&w.state!=='stun'){
-      const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=S.helm?2.4:1.2;say(w.x,w.y-24,'Headbutt!','#e6b422')}}
+      const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=[1.2,1.5,1.9,2.6][S.horns];say(w.x,w.y-24,'Headbutt!','#e6b422')}}
     if(w.state==='flee'&&pdist>950)S.preds.splice(i,1);
   }
   for(let i=S.texts.length-1;i>=0;i--){const t=S.texts[i];t.life-=dt;t.y-=dt*14;if(t.life<=0)S.texts.splice(i,1)}
@@ -430,7 +481,7 @@ function draw(){
     if(g>0.7&&((tx*7+ty*13)%5===0)){ctx.fillStyle='rgba(240,230,150,.5)';ctx.fillRect(tx*T-camx+((tx*31)%30),ty*T-camy+((ty*17)%30),3,3)}}
   const known=o=>S.explored[tileAt(o.x,o.y)];
   for(const h of S.rubble){const x=h.x-camx,y=h.y-camy;if(!known(h)||!onScreen(x,y,160))continue;
-    ctx.fillStyle=h.stone?'#77756c':'#5a3a2c';for(let k=0;k<6;k++){ctx.fillRect(x+((k*37)%h.w),y+((k*23)%h.h),12,8)}}
+    ctx.fillStyle=h.metal?'#5d6a72':h.stone?'#77756c':'#5a3a2c';for(let k=0;k<6;k++){ctx.fillRect(x+((k*37)%h.w),y+((k*23)%h.h),12,8)}}
   for(const s of S.stumps){const x=s.x-camx,y=s.y-camy;if(!known(s)||!onScreen(x,y,20))continue;ctx.fillStyle='#6b4c30';ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();ctx.fillStyle='#a07a50';ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill()}
   for(const h of S.houses){const x=h.x-camx,y=h.y-camy;if(!known(h)&&!known({x:h.x+h.w,y:h.y+h.h}))continue;if(x>vw||y>vh||x+h.w<0||y+h.h<0)continue;
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+6,y+8,h.w,h.h);ctx.fillStyle=h.res<8?'#6a3f30':'#7d4a37';ctx.fillRect(x,y,h.w,h.h);
@@ -448,9 +499,12 @@ function draw(){
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(x+5,y+6,t.r,0,7);ctx.fill();
     ctx.fillStyle='#2f5a24';ctx.beginPath();ctx.arc(x,y,t.r,0,7);ctx.fill();
     ctx.fillStyle='#3e7230';ctx.beginPath();ctx.arc(x-t.r*0.25,y-t.r*0.25,t.r*0.62,0,7);ctx.fill()}
-  for(const f of S.folds){const x=f.x-camx,y=f.y-camy;if(!onScreen(x,y,f.r+20))continue;
-    ctx.strokeStyle='#7a5634';ctx.lineWidth=7;ctx.setLineDash([22,5]);ctx.beginPath();ctx.arc(x,y,f.r,0,7);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='#efe9d6';for(let k=0;k<16;k++){const a=k/16*6.28;ctx.beginPath();ctx.arc(x+Math.cos(a)*f.r,y+Math.sin(a)*f.r,3.5,0,7);ctx.fill()}}
+  for(const k of S.wrecks){const x=k.x-camx,y=k.y-camy;if(!known(k)||!onScreen(x,y,40))continue;
+    ctx.save();ctx.translate(x,y);ctx.rotate(k.a);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(-k.r+4,-k.r*0.55+5,k.r*2,k.r*1.1);
+    ctx.fillStyle=k.tractor?'#8a3b26':'#5d6a72';ctx.fillRect(-k.r,-k.r*0.55,k.r*2,k.r*1.1);
+    ctx.fillStyle='#7a4a2a';ctx.fillRect(-k.r*0.6,-k.r*0.3,k.r*0.7,k.r*0.6);
+    ctx.fillStyle='#222';if(k.tractor){ctx.fillRect(-k.r,-k.r*0.8,k.r*0.8,5);ctx.fillRect(-k.r,k.r*0.8-5,k.r*0.8,5)}else{ctx.fillRect(-k.r*0.8,-k.r*0.7,7,4);ctx.fillRect(k.r*0.5,-k.r*0.7,7,4);ctx.fillRect(-k.r*0.8,k.r*0.7-4,7,4);ctx.fillRect(k.r*0.5,k.r*0.7-4,7,4)}
+    ctx.restore()}
   for(const w of S.walls){const x=w.x-camx,y=w.y-camy;if(!onScreen(x,y,20))continue;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(x+2,y+3,w.r,0,7);ctx.fill();
     ctx.fillStyle='#9a978a';ctx.beginPath();ctx.arc(x,y,w.r,0,7);ctx.fill();ctx.fillStyle='#b4b1a4';ctx.beginPath();ctx.arc(x-3,y-3,w.r*0.45,0,7);ctx.fill()}
   for(const tr of S.traps){const x=tr.x-camx,y=tr.y-camy;if(!onScreen(x,y,20))continue;ctx.fillStyle='#5c4326';ctx.beginPath();ctx.ellipse(x,y,15,10,0.3,0,7);ctx.fill();
@@ -464,7 +518,7 @@ function draw(){
   for(const s of S.flock)drawSheep(s,false,camx,camy);
   drawSheep(p,true,camx,camy);
   for(const w of S.preds)if(seen(w,10))drawPred(w,camx,camy);
-  if(S.helm){ctx.strokeStyle='#b4b1a4';ctx.lineWidth=4;const a=p.face,hx=vw/2-sh+Math.cos(a)*(14+p.fleece*1.3),hy=vh/2-sh+Math.sin(a)*(14+p.fleece*1.3);
+  if(S.horns){ctx.strokeStyle=['','#8a6a44','#b4b1a4','#8fa3b2'][S.horns];ctx.lineWidth=4;const a=p.face,hx=vw/2-sh+Math.cos(a)*(14+p.fleece*1.3),hy=vh/2-sh+Math.sin(a)*(14+p.fleece*1.3);
     for(const k of[-1,1]){ctx.beginPath();ctx.arc(hx-Math.sin(a)*k*6,hy+Math.cos(a)*k*6,5,0,6);ctx.stroke()}}
 
   // fog of sight: clear around Bramble, darker beyond, black where never explored
@@ -473,6 +527,13 @@ function draw(){
   g.addColorStop(0,'rgba(5,7,12,0)');g.addColorStop(1,`rgba(5,7,12,${outer})`);
   ctx.fillStyle=g;ctx.fillRect(0,0,vw,vh);
   if(nt>0){ctx.fillStyle=`rgba(10,16,40,${0.25*nt})`;ctx.fillRect(0,0,vw,vh)}
+  // your shelters stay visible through the dark
+  for(const f of S.folds){const x=f.x-camx,y=f.y-camy;if(!onScreen(x,y,f.r+20))continue;
+    if(f.tier<=2){ctx.strokeStyle=f.hp<f.max*0.3?'#5a3e26':'#7a5634';ctx.lineWidth=f.tier===1?5:7;ctx.setLineDash(f.tier===1?[16,7]:[22,4]);ctx.beginPath();ctx.arc(x,y,f.r,0,7);ctx.stroke();ctx.setLineDash([]);
+      if(f.tier===2){ctx.fillStyle='#efe9d6';for(let k=0;k<18;k++){const a=k/18*6.28;ctx.beginPath();ctx.arc(x+Math.cos(a)*f.r,y+Math.sin(a)*f.r,3.5,0,7);ctx.fill()}}}
+    else{ctx.fillStyle='#8d8a7e';for(let k=0;k<34;k++){const a=k/34*6.28;ctx.beginPath();ctx.arc(x+Math.cos(a)*f.r,y+Math.sin(a)*f.r,6+(k%3),0,7);ctx.fill()}
+      if(f.tier===4){ctx.strokeStyle='#8fa3b2';ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,f.r,-0.35,0.35);ctx.stroke()}}
+    if(f.hp<f.max){const w=60;ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(x-w/2,y-f.r-16,w,6);ctx.fillStyle=f.hp<f.max*0.3?'#e05a4a':'#e6b422';ctx.fillRect(x-w/2,y-f.r-16,w*f.hp/f.max,6)}}
   // the circle while moving
   if(S.circling){ctx.strokeStyle='rgba(156,191,106,.45)';ctx.setLineDash([5,7]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,44+Math.sqrt(S.flock.length)*11+16,0,7);ctx.stroke();ctx.setLineDash([])}
   // wolves' eyes in the dark
@@ -507,7 +568,7 @@ function hud(){
   bar('bHunger',p.hunger/100);set('vHunger',~~p.hunger);bar('bHealth',p.health/100);set('vHealth',Math.max(0,~~p.health));
   bar('bFleece',p.fleece/10);set('vFleece',p.fleece.toFixed(1)+'kg');$('bFleece').style.background=p.fleece>7?'#e0835a':p.fleece>4?'#e6b422':'#f4f2e6';
   set('vFlock',`${S.flock.length+1} sheep`);const ready=S.flock.filter(s=>s.fleece>=4).length;set('vReady',ready?`${ready} ready`:'');
-  set('vWool',~~S.wool);set('vWood',S.wood);set('vStone',S.stone);
+  set('vWool',~~S.wool);set('vWood',S.wood);set('vStone',S.stone);set('vMetal',S.metal);
 }
 
 // ---------- overlays ----------
@@ -518,18 +579,18 @@ function showIntro(){
   <ul><li><kbd>WASD</kbd> or arrows to move. On a phone, drag anywhere.</li>
   <li>Hold <kbd>Space</kbd> or GRAZE to eat. Bare brown ground has nothing left.</li>
   <li><kbd>B</kbd> or BLEAT to call out. Sheep nearby answer and show up briefly. At night, wolves hear it too.</li>
-  <li><kbd>Shift</kbd> or CHARGE to headbutt. Charge trees and buildings for wood and big cracked rocks for stone. It also knocks wolves back.</li>
-  <li>Walk near a stray to recruit it. Their fleeces grow; press <kbd>F</kbd> or SHEAR near flockmates with a yellow dot to harvest wool.</li>
+  <li><kbd>Shift</kbd> or CHARGE to headbutt. At first you can only break trees and buildings for wood. Better horns let you break big rocks for stone, then old cars and tractors for metal. Charging also knocks wolves back.</li>
+  <li>Walk near a stray to recruit it. Their fleeces grow, and once you've made shears, press <kbd>F</kbd> or SHEAR near flockmates with a yellow dot to harvest wool.</li>
   <li>Wolves will attack a flock that stands still. With four or more flockmates, keep moving and they circle you, and the wolves can only pace around.</li>
   <li>Grazing is slow, and while heads are down the flock spreads out and can't see far. Only green meadow has grass; scree, bog and old roads have none, bog slows you, and nothing crosses water.</li>
-  <li><kbd>C</kbd> or CRAFT to build from wool, wood and stone: a fold to shelter in, stone walls, a decoy sheep, dag traps and a ram-horn helm.</li>
+  <li><kbd>C</kbd> or CRAFT to open the upgrade tree. Start with a Wooden Pen and a Ram-horn Helm. Wolves will chew through a weak pen, so upgrade it as you go: wool-lined, then drystone, then iron-gated.</li>
   <li>Your own fleece slows you down. Rub against rocks and posts to shed it, or you may get cast on your back.</li></ul>
   <button id="go" type="button">Leave the field</button>`;
   ov.hidden=false;$('go').onclick=start;$('go').focus();
 }
 function showOver(){
   card.innerHTML=`<div class="eb">Bramble has fallen</div><h1>Day ${S.day}</h1>
-  <p>Largest flock: <b>${S.maxFlock}</b> sheep (${rank(S.maxFlock)}). Gathered <b>${~~S.wool}</b> wool, <b>${S.wood}</b> wood and <b>${S.stone}</b> stone.</p>
+  <p>Largest flock: <b>${S.maxFlock}</b> sheep (${rank(S.maxFlock)}). Gathered <b>${~~S.wool}</b> wool, <b>${S.wood}</b> wood, <b>${S.stone}</b> stone and <b>${S.metal}</b> metal.</p>
   <p>${S.maxFlock<5?'Next time, bleat to find strays before the first night. Alone, a sheep is dinner.':'At night, graze in short bursts. Every time you stop, the wolves close in.'}</p>
   <button id="go" type="button">Try again</button>`;
   ov.hidden=false;$('go').onclick=start;$('go').focus();
