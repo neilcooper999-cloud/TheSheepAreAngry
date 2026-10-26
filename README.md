@@ -14,6 +14,9 @@ Open `index.html` in a browser. It is a single file with no build step.
 - B or BLEAT to call out; nearby strays answer and show briefly (wolves hear it at night)
 - F or SHEAR to harvest wool from your flock (needs shears)
 - C or CRAFT to open the upgrade tree
+- M to turn sound and music off or on
+
+On a touch screen, CHARGE is the big button in the bottom-right corner, with GRAZE, BLEAT, SHEAR and CRAFT in an arc above and to its left. SHEAR only appears once you have shears.
 
 When you graze the whole flock grazes, so a big flock strips a pasture fast, and grass takes many days to grow back. A bigger flock sees further, gathers more and gets a lookout, but it is hungrier and draws more wolves.
 
@@ -28,6 +31,10 @@ Sheep are rare. There is one ewe and one ram near the start, a few wanderers out
 The map is split into regions, each with its own mix of resources and danger: Home Meadows (gentle), Old Farmland (barns, tractors, wild sheepdogs), the Wildwood (timber, foxes by day), the Marsh (bog, lost sheep), the Fells (stone, little grass, wolves by day) and the Ruined Town (rich in metal but no grass, and dangerous day and night).
 
 Wolves kill a ewe in one bite. Foxes are smaller and take two bites for a ewe and four for a ram. Rams defend the flock on their own and survive two wolf bites. Wild sheepdogs herd your sheep away; charge one three times to train it, and it patrols around the flock and chases off predators.
+
+## Music
+
+Each region has its own tune, and the music crossfades as you cross into a new one: a gentle pentatonic tune in the Home Meadows, a jaunty fiddle jig with oom-pah bass on the Old Farmland, a breathy dorian flute over a drone in the Wildwood, slow watery minor chords with drips in the Marsh, a lonely horn over bare fifths on the Fells, and a tense pulsing phrygian beat with metal clanks in the Ruined Town. At night the music gets quieter and darker, and the tune comes round less often. It is all made live with WebAudio, so there are no sound files.
 
 ## Carrying
 
