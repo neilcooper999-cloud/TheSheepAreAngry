@@ -513,7 +513,8 @@ function build(id){
   for(const[k,v]of Object.entries(r.cost))S[k]-=v;
   grid=null;
   if(id==='shelter'){const f=shelterHere();
-    if(!f){S.folds.push({x:p.x,y:p.y,r:85,tier:1,hp:SHELTERS[1].hp,max:SHELTERS[1].hp});say(p.x,p.y-40,'A pen! Everyone in.','#9cbf6a')}
+    if(!f){S.folds.push({x:p.x,y:p.y,r:85,tier:1,hp:SHELTERS[1].hp,max:SHELTERS[1].hp});say(p.x,p.y-40,'A pen! Everyone in.','#9cbf6a');
+      if(S.folds.length===1)toast('Your pen is marked on the minimap with a hut. When it\'s off the map, an arrow on the edge points the way home.',5)}
     else{f.tier++;f.hp=f.max=SHELTERS[f.tier].hp;say(p.x,p.y-40,`${SHELTERS[f.tier].name}!`,'#9cbf6a')}}
   else if(id==='repair'){const f=shelterHere();f.hp=Math.min(f.max,f.hp+f.max/3);say(p.x,p.y-40,'Patched up.','#9cbf6a')}
   else if(id==='horns1'){S.horns=1;say(p.x,p.y-40,'Horns on! Now for some rock.','#e6b422')}
@@ -941,6 +942,14 @@ function draw(){
   for(const s of S.strays)if(s.seen>0||seen(s))dot(s,'#cfe0ff',4);
   for(const s of S.flock)dot(s,'#fff',3);
   for(const w of S.preds)if(w.tame||seen(w))dot(w,w.tame?'#9cbf6a':'#e05a4a',3.5);
+  // pens Flossy has built: a little hut icon, or an arrow on the edge pointing home when the pen is off the map
+  for(const f of S.folds){const col=['#c89a5c','#c89a5c','#f4f2e6','#a9a9a0','#6fd3e0','#ff4d6d'][f.tier]||'#c89a5c';
+    if(inMM(f.x,f.y)){const[x,y]=mp(f.x,f.y);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-6,y-3,12,10);
+      ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x-7,y-1);ctx.lineTo(x,y-8);ctx.lineTo(x+7,y-1);ctx.closePath();ctx.fill();ctx.fillRect(x-5,y-1,10,7);
+      ctx.fillStyle='#000';ctx.fillRect(x-1.5,y+2,3,4)}
+    else{const a=Math.atan2(f.y-p.y,f.x-p.x),R=mm/2-7,x=mx+mm/2+Math.cos(a)*R,y=my+mm/2+Math.sin(a)*R;
+      ctx.save();ctx.translate(Math.max(mx+6,Math.min(mx+mm-6,x)),Math.max(my+6,Math.min(my+mm-6,y)));ctx.rotate(a);
+      ctx.fillStyle=col;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-5,-6);ctx.lineTo(-5,6);ctx.closePath();ctx.stroke();ctx.fill();ctx.restore()}}
   ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(mx+mm/2,my+mm/2,3,0,7);ctx.fill();
   ctx.restore();ctx.strokeStyle='rgba(255,255,255,.25)';ctx.strokeRect(mx,my,mm,mm);
 }
@@ -991,6 +1000,7 @@ function showDetails(){
   <li>When you graze, the whole flock grazes, so a big flock strips a pasture fast and grass takes many days to grow back. While heads are down the flock spreads out and can't see far. Only green meadow has grass; scree, bog and old roads have none, bog slows you, and nothing crosses water.</li>
   <li>The best items need a big flock as well as materials. At the top of the tree, Laser Horns let Flossy and her rams zap predators from a distance, using old tech dug out of the Ruined Town.</li>
   <li><kbd>C</kbd> or CRAFT to open the upgrade tree. Start with a Wooden Pen and a Ram-horn Helm. Wolves will chew through a weak pen, so upgrade it as you go: wool-lined, then drystone, then iron-gated.</li>
+  <li>Choose where to build your pen with care: it's built where Flossy stands and becomes the flock's home base. Good grass nearby keeps the flock fed, and every upgrade goes into the same spot. It shows on the minimap as a hut, with an arrow pointing home when it's out of view.</li>
   <li>Your own fleece slows you down, and too much can leave you cast on your back. Rubbing against trees, rocks and posts tears a little off and gives you a scrap of wool, but only down to 3 kg. To get it all off you need shears.</li></ul>
   <button id="back2" type="button" class="ghost">Back</button>`;
   $('back').onclick=$('back2').onclick=showIntro;$('back').focus({preventScroll:true});ov.scrollTop=0;
