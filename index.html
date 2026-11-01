@@ -315,16 +315,26 @@ const saveAudio=()=>{try{localStorage.setItem('sheepAudio',JSON.stringify({sound
 const ac=()=>{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx};
 const audio=()=>soundOn?ac():null;
 // One plain "baa": a sawtooth voice through "aa" formants with the fast warble of a real sheep
-function baaCharge(){try{const a=audio();if(!a)return;const t=a.currentTime,dur=0.62;
-  const out=a.createGain();out.gain.value=0.5;out.connect(a.destination);
-  const o=a.createOscillator(),g=a.createGain(),trem=a.createOscillator(),tg=a.createGain(),vib=a.createOscillator(),vg=a.createGain();
-  o.type='sawtooth';o.frequency.setValueAtTime(300,t);o.frequency.linearRampToValueAtTime(440,t+0.09);o.frequency.linearRampToValueAtTime(410,t+dur*0.6);o.frequency.linearRampToValueAtTime(320,t+dur);
-  vib.frequency.value=6;vg.gain.value=16;vib.connect(vg).connect(o.frequency);
-  trem.frequency.value=24;tg.gain.value=0.45;trem.connect(tg).connect(g.gain);
-  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.55,t+0.05);g.gain.setValueAtTime(0.55,t+dur*0.65);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
-  const f1=a.createBiquadFilter(),f2=a.createBiquadFilter(),mix=a.createGain();f1.type=f2.type='bandpass';f1.frequency.value=800;f1.Q.value=5;f2.frequency.value=1250;f2.Q.value=7;mix.gain.value=2.2;
-  o.connect(g);g.connect(f1).connect(mix);g.connect(f2).connect(mix);mix.connect(out);
-  for(const n of[o,trem,vib]){n.start(t);n.stop(t+dur+0.05)}
+// Flossy's charge: a squeaky cartoon-lamb "baa", like a kid doing a lamb voice. A buzzy voice runs through three
+// vowel formants; the "b" is the formants sliding up from low as the voice opens. Pitch and length vary a little each time.
+function baaCharge(){try{const a=audio();if(!a)return;const t=a.currentTime,k=0.95+Math.random()*0.1,dur=0.55*(0.92+Math.random()*0.16),sh=1.25;
+  const out=a.createGain();out.gain.value=0.9*0.22;out.connect(a.destination);
+  const src=a.createOscillator();src.type='sawtooth';
+  src.frequency.setValueAtTime(380*k,t);src.frequency.linearRampToValueAtTime(500*k,t+dur*0.15);src.frequency.linearRampToValueAtTime(470*k,t+dur*0.7);src.frequency.linearRampToValueAtTime(360*k,t+dur);
+  const soft=a.createBiquadFilter();soft.type='lowpass';soft.frequency.value=3200;
+  const env=a.createGain();
+  env.gain.setValueAtTime(0.0001,t);env.gain.exponentialRampToValueAtTime(0.25,t+0.015);env.gain.exponentialRampToValueAtTime(1,t+0.06);
+  env.gain.setValueAtTime(1,t+dur*0.7);env.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  // the lamb's flutter, on loudness and pitch
+  const fl=a.createOscillator(),fg=a.createGain(),fp=a.createGain();fl.frequency.value=9;fg.gain.setValueAtTime(0,t);fg.gain.linearRampToValueAtTime(0.35,t+0.12);fp.gain.value=14;
+  fl.connect(fg).connect(env.gain);fl.connect(fp).connect(src.frequency);
+  src.connect(soft).connect(env);
+  // a puff of breath as the lips part on the "b"
+  const nb=a.createBuffer(1,a.sampleRate*0.05,a.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);
+  const ns=a.createBufferSource(),nf=a.createBiquadFilter(),ng=a.createGain();ns.buffer=nb;nf.type='bandpass';nf.frequency.value=900;nf.Q.value=1;ng.gain.value=0.12;ns.connect(nf).connect(ng).connect(out);ns.start(t+0.005);
+  [[760,280,1,0.11],[1500,850,0.55,0.09],[2800,2200,0.22,0.07]].forEach(([f,f0,gn,bw])=>{const bp=a.createBiquadFilter(),g=a.createGain();bp.type='bandpass';
+    bp.frequency.setValueAtTime(f0*sh,t);bp.frequency.exponentialRampToValueAtTime(f*sh,t+0.07);bp.Q.value=1/bw;g.gain.value=gn*5;env.connect(bp).connect(g).connect(out)});
+  for(const n of[src,fl]){n.start(t);n.stop(t+dur+0.05)}
 }catch(e){}}
 
 // The bleat: a short, high baa that rings out like a sonar ping, with echoes coming back off the hills
