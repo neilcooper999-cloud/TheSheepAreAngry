@@ -206,7 +206,7 @@ function newGame(){
   S={t:DAY*0.07,terr,grass,reg,explored:new Uint8Array(COLS*COLS),rocks,posts,houses,trees,stumps:[],rubble:[],strays,flock:[],preds:[],texts:[],pings:[],
     folds:[],walls:[],decoys:[],traps:[],pens,confetti:[],penShown:false,alerts:[],barrenShown:false,wrecks,horns:0,shears:0,metal:0,stoneShown:false,metalShown:false,
     p:{x:c,y:c,vx:0,vy:0,face:0,hunger:100,health:100,fleece:2,dash:0,dashCd:0,cast:0,grazing:false,bob:0,still:0},
-    wool:0,wood:0,stone:0,tech:0,beams:[],shocks:[],laserCd:0,ramLasers:false,bags:0,trumpet:false,balm:false,ramCoat:false,techShown:false,bleatCd:0,orbit:0,circling:false,sp:{wolf:0,fox:8,dog:25},curReg:-1,seenKinds:{},driveShown:false,
+    wool:0,wood:0,stone:0,tech:0,beams:[],shocks:[],impacts:[],laserCd:0,ramLasers:false,bags:0,trumpet:false,balm:false,ramCoat:false,techShown:false,bleatCd:0,orbit:0,circling:false,sp:{wolf:0,fox:8,dog:25},curReg:-1,seenKinds:{},driveShown:false,
     maxFlock:1,day:1,running:true,over:false,herdShown:false,flockShown:false,circleShown:false,grazeShown:false,lastDay:1,shake:0};
   mmx.fillStyle='#000';mmx.fillRect(0,0,COLS,COLS);grid=null;
 }
@@ -350,6 +350,14 @@ const deg=(sc,i)=>{const s=SCALES[sc],n=s.length;return s[((i%n)+n)%n]+12*Math.f
 // a tune is written one character per eighth note: a scale step in base 36, "-" to hold, "." for a rest
 const tune=str=>{const ev=[];let i=0;for(const c of str.replace(/[ |]/g,'')){const l=ev[ev.length-1];if(c==='-'){if(l&&l.s+l.len===i)l.len++}else if(c!=='.')ev.push({s:i,d:parseInt(c,36),len:1});i++}return{ev,len:i}};
 const M={bus:null,lp:null,key:null,want:null,k:0,next:0,timer:null,switchAt:0,noise:null};
+// headbutt: a low, dull thump with a short yelp from the animal
+function thud(kind){try{const a=audio();if(!a)return;const t=a.currentTime,out=a.createGain();out.gain.value=0.55;out.connect(a.destination);
+  const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+0.18);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(1,t+0.005);g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);o.connect(g).connect(out);o.start(t);o.stop(t+0.27);
+  const n=a.createBufferSource(),b=a.createBuffer(1,a.sampleRate*0.08,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)**2;
+  const lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;const ng=a.createGain();ng.gain.value=0.6;n.buffer=b;n.connect(lp).connect(ng).connect(out);n.start(t);
+  const y=a.createOscillator(),yg=a.createGain(),f0=kind==='fox'?1100:kind==='dog'?800:600;y.type='triangle';y.frequency.setValueAtTime(f0,t+0.06);y.frequency.exponentialRampToValueAtTime(f0*1.5,t+0.11);y.frequency.exponentialRampToValueAtTime(f0*0.8,t+0.24);
+  yg.gain.setValueAtTime(0.0001,t+0.06);yg.gain.exponentialRampToValueAtTime(0.18,t+0.08);yg.gain.exponentialRampToValueAtTime(0.0001,t+0.26);y.connect(yg).connect(out);y.start(t+0.06);y.stop(t+0.28)}catch(e){}}
 function tone(t,m,dur,o={}){const a=actx,osc=a.createOscillator(),g=a.createGain();osc.type=o.w||'triangle';osc.frequency.value=mtof(m);let n=osc;
   if(o.f){const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=o.f;f.Q.value=o.q||0.7;osc.connect(f);n=f}
   if(o.vib){const l=a.createOscillator(),lg=a.createGain();l.frequency.value=o.vib;lg.gain.value=o.vd||8;l.connect(lg).connect(osc.detune);l.start(t);l.stop(t+dur+1)}
@@ -448,6 +456,15 @@ function salvage(p,x,y){if(REG[regionAt(x,y)].key!=='town')return;
 function bonk(p,x,y,txt,col){
   grid=null;
   p.dash=0;const a=Math.atan2(p.y-y,p.x-x);p.vx=Math.cos(a)*220;p.vy=Math.sin(a)*220;S.shake=0.25;say(p.x,p.y-34,txt,col);
+}
+// Flossy's charge meets a dog, wolf or fox: she stops dead and bounces back instead of running through it,
+// with a burst at the point of contact, a screen shake, a thud and a white flash on the animal
+function headbutt(p,w,fresh){
+  const a=Math.atan2(p.y-w.y,p.x-w.x),gap=Math.max(Math.hypot(p.x-w.x,p.y-w.y),1);
+  p.dash=0;p.vx=Math.cos(a)*240;p.vy=Math.sin(a)*240;
+  if(gap<34){p.x=w.x+Math.cos(a)*34;p.y=w.y+Math.sin(a)*34}
+  if(!fresh)return;
+  S.shake=0.35;w.flash=0.18;S.impacts.push({x:(p.x+w.x)/2,y:(p.y+w.y)/2,t:0,a:a+Math.PI});thud(w.kind);
 }
 
 // shelter upgrade tree: each tier is built on top of the last, in place
@@ -709,8 +726,9 @@ function update(dt){
     w.vx+=(tx*sp-w.vx)*Math.min(1,dt*4);w.vy+=(ty*sp-w.vy)*Math.min(1,dt*4);
     moveBy(w,dt);
     for(const f of S.folds){const d=Math.hypot(w.x-f.x,w.y-f.y);if(d<f.r+14&&d>0){w.x=f.x+(w.x-f.x)/d*(f.r+14);w.y=f.y+(w.y-f.y)/d*(f.r+14)}}if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,fox?9:12);
+    if(p.dash>0&&w.state==='stun'&&Math.hypot(p.x-w.x,p.y-w.y)<34)headbutt(p,w,false);
     for(const h of [p,...S.flock.filter(s=>s.charge>0)]){if((h===p?p.dash>0:true)&&Math.hypot(h.x-w.x,h.y-w.y)<34&&w.state!=='stun'){
-      const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=[1.2,1.5,1.9,2.6,3,3][S.horns]*(fox?1.4:1);say(w.x,w.y-24,h===p?'Headbutt!':'Rammed!','#e6b422')}}
+      if(h===p)headbutt(p,w,true);const a=Math.atan2(w.y-h.y,w.x-h.x);w.vx=Math.cos(a)*400;w.vy=Math.sin(a)*400;w.state='stun';w.st=[1.2,1.5,1.9,2.6,3,3][S.horns]*(fox?1.4:1);say(w.x,w.y-24,h===p?'Headbutt!':'Rammed!','#e6b422')}}
     if(S.flock.length>=10&&w.state==='hunt'&&!w.warned&&pdist<380&&pdist>vision()){w.warned=true;
       const dir=['east','south-east','south','south-west','west','north-west','north','north-east'][((Math.round(Math.atan2(w.y-p.y,w.x-p.x)/(Math.PI/4))%8)+8)%8];
       say(p.x,p.y-48,`${fox?'Fox':'Wolf'} to the ${dir}!`,'#e05a4a');S.alerts.push({w,t:2.5})}
@@ -750,6 +768,8 @@ function lasers(dt){
   for(const f of S.folds){if(f.tier<5)continue;f.lcd=(f.lcd||0)-dt;if(f.lcd<=0){const t=zapTarget(f.x,f.y,f.r+170);if(t){zap(f.x+Math.cos(Math.atan2(t.y-f.y,t.x-f.x))*f.r,f.y+Math.sin(Math.atan2(t.y-f.y,t.x-f.x))*f.r,t);f.lcd=1}}}
   for(let i=S.beams.length-1;i>=0;i--){S.beams[i].t-=dt;if(S.beams[i].t<=0)S.beams.splice(i,1)}
   for(let i=S.shocks.length-1;i>=0;i--){S.shocks[i].t+=dt;if(S.shocks[i].t>0.5)S.shocks.splice(i,1)}
+  for(let i=S.impacts.length-1;i>=0;i--){S.impacts[i].t+=dt;if(S.impacts[i].t>0.35)S.impacts.splice(i,1)}
+  for(const w of S.preds)if(w.flash>0)w.flash-=dt;
 }
 function nearestPred(s,r){let b=null,bd=r;for(const w of S.preds){if(!hostile(w)||w.state==='stun'||w.state==='flee')continue;const d=Math.hypot(w.x-s.x,w.y-s.y);if(d<bd){bd=d;b=w}}return b}
 const KIND_INTRO={wolf:'Eyes in the dark. Keep moving, and keep the flock close.',
@@ -788,7 +808,8 @@ function updateDog(w,dt,pdist,R){
   moveBy(w,dt);if(Math.hypot(w.vx,w.vy)>10)w.face=Math.atan2(w.vy,w.vx);collide(w,11);
   if(w.tame)return;
   // Flossy's charge trains a wild dog; a ram's only knocks it back
-  if(p.dash>0&&w.state!=='stun'&&Math.hypot(p.x-w.x,p.y-w.y)<36){w.tameHits++;const a=Math.atan2(w.y-p.y,w.x-p.x);w.vx=Math.cos(a)*300;w.vy=Math.sin(a)*300;w.state='stun';w.st=1;
+  if(p.dash>0&&w.state==='stun'&&Math.hypot(p.x-w.x,p.y-w.y)<36)headbutt(p,w,false);
+  if(p.dash>0&&w.state!=='stun'&&Math.hypot(p.x-w.x,p.y-w.y)<36){headbutt(p,w,true);w.tameHits++;const a=Math.atan2(w.y-p.y,w.x-p.x);w.vx=Math.cos(a)*300;w.vy=Math.sin(a)*300;w.state='stun';w.st=1;
     if(w.tameHits>=3){w.tame=true;w.state='patrol';w.name=DOG_NAMES[S.preds.filter(o=>o.tame).length%DOG_NAMES.length];say(w.x,w.y-26,`Good dog, ${w.name}!`,'#9cbf6a');
       toast(`${w.name} the sheepdog is yours now, and will patrol around the flock and chase off predators.`,4.5)}
     else say(w.x,w.y-26,`Sit! (${3-w.tameHits} more)`,'#e6b422')}
@@ -818,8 +839,8 @@ function drawSheep(s,isP,camx,camy,ghost){
   if(!isP&&!ghost&&S.flock.includes(s)&&s.fleece>=4){ctx.fillStyle='#e6b422';ctx.beginPath();ctx.arc(x,y-r-6,3,0,7);ctx.fill()}
 }
 function drawPred(w,camx,camy){
-  const k=w.kind,sc=k==='fox'?0.7:k==='dog'?0.85:1;
-  ctx.save();ctx.translate(w.x-camx,w.y-camy);ctx.rotate(w.face);ctx.scale(sc,sc);
+  const k=w.kind,sc=k==='fox'?0.7:k==='dog'?0.85:1,dazed=w.state==='stun',tm=performance.now()/1000;
+  ctx.save();ctx.translate(w.x-camx,w.y-camy);ctx.rotate(w.face+(dazed?Math.sin(tm*18)*0.35:0));ctx.scale(sc,sc);
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(2,4,20,9,0,0,7);ctx.fill();
   if(k==='dog'&&w.tame){ctx.strokeStyle='rgba(230,180,34,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,30,17,0,0,7);ctx.stroke()}
   ctx.fillStyle=k==='fox'?'#d0612a':k==='dog'?'#1f1d1c':'#6e6a66';ctx.beginPath();ctx.ellipse(0,0,18,8,0,0,7);ctx.fill();
@@ -832,7 +853,11 @@ function drawPred(w,camx,camy){
     ctx.fillStyle='#e6b422';ctx.beginPath();ctx.roundRect(12,-7.5,4,15,2);ctx.fill();
     ctx.beginPath();ctx.arc(17.5,0,2.6,0,7);ctx.fill();ctx.strokeStyle='#3a2f00';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#1f1d1c'}
   ctx.fillStyle=w.state==='stun'||w.state==='stuck'?'#9cbf6a':k==='dog'?'#c9b48a':'#ffd36a';ctx.beginPath();ctx.arc(20,-3,1.8,0,7);ctx.arc(20,3,1.8,0,7);ctx.fill();
+  if(w.flash>0){ctx.globalAlpha=Math.min(1,w.flash/0.18)*0.85;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,20,10,0,0,7);ctx.ellipse(22,0,8,6,0,0,7);ctx.fill();ctx.globalAlpha=1}
   ctx.restore();
+  // dazed: little yellow stars circling over its head
+  if(dazed){const x=w.x-camx,y=w.y-camy-22;for(let i=0;i<3;i++){const an=tm*5+i*2.09,sx=x+Math.cos(an)*13,sy=y+Math.sin(an)*4.5;
+    ctx.fillStyle='#ffe066';ctx.beginPath();for(let j=0;j<10;j++){const r=j%2?1.6:4,q=j*Math.PI/5-Math.PI/2;ctx.lineTo(sx+Math.cos(q)*r,sy+Math.sin(q)*r)}ctx.closePath();ctx.fill()}}
 }
 function tileColor(tr,g,tx,ty){const v=((tx*13+ty*7)%5)*3;
   if(tr===SCREE)return `rgb(${128+v},${124+v},${110+v})`;if(tr===BOG)return `rgb(${58+v},${66+v},${42})`;
@@ -847,7 +872,7 @@ function terrDetail(tr,x,y,tx,ty){const h=(tx*31+ty*17)%29;
 const onScreen=(x,y,m)=>x>-m&&y>-m&&x<vw+m&&y<vh+m;
 function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  const p=S.p,sh=S.shake>0?rnd(-4,4):0,camx=p.x-vw/2+sh,camy=p.y-vh/2+sh;
+  const p=S.p,sh=S.shake>0?rnd(-1,1)*Math.min(10,S.shake*26):0,camx=p.x-vw/2+sh,camy=p.y-vh/2+sh;
   const vr=vision(),nt=nightness();
   const seen=(o,pad=0)=>Math.hypot(o.x-p.x,o.y-p.y)<vr+pad;
   ctx.fillStyle='#05070a';ctx.fillRect(0,0,vw,vh);
@@ -928,6 +953,10 @@ function draw(){
   for(const bm of S.beams){ctx.globalAlpha=Math.min(1,bm.t*6);ctx.strokeStyle='#ff4d6d';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(bm.x1-camx,bm.y1-camy);ctx.lineTo(bm.x2-camx,bm.y2-camy);ctx.stroke();
     ctx.strokeStyle='#ffe0e6';ctx.lineWidth=1;ctx.stroke()}
   ctx.restore();ctx.globalAlpha=1;
+  for(const im of S.impacts){const k=im.t/0.35,x=im.x-camx,y=im.y-camy;ctx.save();ctx.translate(x,y);
+    ctx.globalAlpha=1-k;ctx.fillStyle='#fff6c8';ctx.beginPath();for(let j=0;j<16;j++){const r=(j%2?10:28)*(0.6+k*0.9),q=j*Math.PI/8+im.a;ctx.lineTo(Math.cos(q)*r,Math.sin(q)*r)}ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#e6b422';ctx.lineWidth=3;for(let j=0;j<8;j++){const q=j*Math.PI/4+im.a+0.2,r0=18+k*26,r1=26+k*34;ctx.beginPath();ctx.moveTo(Math.cos(q)*r0,Math.sin(q)*r0);ctx.lineTo(Math.cos(q)*r1,Math.sin(q)*r1);ctx.stroke()}
+    ctx.restore()}
   for(const sk of S.shocks){const k=sk.t/0.5;ctx.strokeStyle=`rgba(111,211,224,${0.8*(1-k)})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(sk.x-camx,sk.y-camy,20+k*120,0,7);ctx.stroke()}
   for(const c of S.confetti){ctx.globalAlpha=Math.min(1,c.t*2);ctx.fillStyle=c.c;ctx.beginPath();ctx.arc(c.x-camx,c.y-camy,3,0,7);ctx.fill()}ctx.globalAlpha=1;
   if(S.cheer>0){ctx.strokeStyle=`rgba(230,180,34,${S.cheer*0.6})`;ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,cy,60+(1-S.cheer)*160,0,7);ctx.stroke()}
