@@ -59,6 +59,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .recipes{display:grid;gap:8px;margin:0 0 .4rem}
 .card.wide{max-width:50rem;width:100%}
 .chead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+/* craft and details pages: the header (with Close/Back) sticks to the top while the list scrolls under it */
+.card.wide .chead,.stickhead{position:sticky;top:-16px;z-index:2;background:#232c1c;margin:-22px -22px 0;padding:22px 22px 10px;border-radius:10px 10px 0 0;box-shadow:0 8px 10px -8px rgba(0,0,0,.6)}
+.stickhead .chead{position:static;margin:0;padding:0;box-shadow:none;border-radius:0}.stickhead .resbar{position:static;padding-block:0;margin-bottom:0}
 .card button.x{margin:0;padding:8px 12px;font-size:14px}
 .resbar{display:flex;flex-wrap:wrap;gap:8px;margin:.7rem 0 .2rem;position:sticky;top:-22px;background:#232c1c;padding-block:8px;z-index:1}
 .res{display:flex;align-items:center;gap:7px;background:#1a2114;border:1px solid #3d4a31;border-radius:6px;padding:6px 10px;font:500 12px var(--mono)}
@@ -503,8 +506,8 @@ function showCraft(){
   // what you can afford right now comes first, from every track in tree order; the rest of the tree hides behind a checkbox
   const ready=groups.flatMap(([tk])=>all.filter(r=>r.track===tk&&canBuild(r)));
   card.classList.add('wide');
-  card.innerHTML=`<div class="chead"><div><div class="eb">Craft</div><h1>Flock <span>works</span></h1></div><button id="close" type="button" class="ghost x" aria-label="Close">Close ✕</button></div>
-  <div class="resbar">${RES.map(([k,n,c])=>`<div class="res"><i style="background:${c}"></i><span>${n}</span><b>${Math.floor(S[k])}</b></div>`).join('')}<div class="res load"><span>Carrying</span><b>${Math.floor(load())}/${carryCap()}</b></div></div>
+  card.innerHTML=`<div class="stickhead"><div class="chead"><div><div class="eb">Craft</div><h1>Flock <span>works</span></h1></div><button id="close" type="button" class="ghost x" aria-label="Close">Close ✕</button></div>
+  <div class="resbar">${RES.map(([k,n,c])=>`<div class="res"><i style="background:${c}"></i><span>${n}</span><b>${Math.floor(S[k])}</b></div>`).join('')}<div class="res load"><span>Carrying</span><b>${Math.floor(load())}/${carryCap()}</b></div></div></div>
   <h2 class="trk">Ready to build</h2>${ready.length?`<div class="recipes">${ready.map(card_).join('')}</div>`:`<div class="sub">Nothing you can build yet. Gather more, or tick the box below to see what's coming.</div>`}
   <label class="opt treebox"><input type="checkbox" id="showTree" ${craftAll?'checked':''}> Show full tech tree</label>
   ${craftAll?groups.map(([tk,title,sub])=>{const rs=all.filter(r=>r.track===tk&&!canBuild(r));return rs.length?`<h2 class="trk">${title}</h2>${sub?`<div class="sub">${sub}</div>`:''}<div class="recipes">${rs.map(card_).join('')}</div>`:''}).join(''):''}`;
@@ -980,6 +983,8 @@ function hud(){
 
 // ---------- overlays ----------
 const ov=$('overlay'),card=$('card');
+// a click or tap on the dimmed backdrop, outside the card, closes the craft menu
+ov.addEventListener('click',e=>{if(e.target===ov&&$('showTree'))closeCraft()});
 function showIntro(){
   card.classList.remove('wide');
   card.innerHTML=`<div class="eb">A survival game</div><h1>The Sheep Are <span>Angry!</span></h1>
