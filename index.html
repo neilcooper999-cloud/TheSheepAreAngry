@@ -59,6 +59,9 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .recipes{display:grid;gap:8px;margin:0 0 .4rem}
 .card.wide{max-width:50rem;width:100%}
 .chead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+/* craft and details pages: the header (with Close/Back) sticks to the top while the list scrolls under it */
+.card.wide .chead,.stickhead{position:sticky;top:-16px;z-index:2;background:#232c1c;margin:-22px -22px 0;padding:22px 22px 10px;border-radius:10px 10px 0 0;box-shadow:0 8px 10px -8px rgba(0,0,0,.6)}
+.stickhead .chead{position:static;margin:0;padding:0;box-shadow:none;border-radius:0}.stickhead .resbar{position:static;padding-block:0;margin-bottom:0}
 .card button.x{margin:0;padding:8px 12px;font-size:14px}
 .resbar{display:flex;flex-wrap:wrap;gap:8px;margin:.7rem 0 .2rem;position:sticky;top:-22px;background:#232c1c;padding-block:8px;z-index:1}
 .res{display:flex;align-items:center;gap:7px;background:#1a2114;border:1px solid #3d4a31;border-radius:6px;padding:6px 10px;font:500 12px var(--mono)}
@@ -89,6 +92,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 .card p.warn{font:800 17px/1.3 var(--display);color:var(--rust)}
 .opt{display:flex;gap:12px;align-items:flex-start;background:#2c3723;border:1px solid #3d4a31;border-radius:8px;padding:12px;margin:10px 0;cursor:pointer}
 .opt input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--tag);flex:none}.opt b{display:block;font:800 15px/1.2 var(--display)}
+.opt.treebox{align-items:center;font:700 15px/1.2 var(--display);margin:16px 0 4px}
 .card button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);font:800 16px/1.2 var(--display);
   background:var(--panel);padding:8px 14px;border-radius:6px;pointer-events:none;text-align:center;max-width:min(34rem,calc(100% - 32px))}
@@ -487,21 +491,28 @@ function shelterRecipes(){
 }
 const RES=[['wool','Wool','#f4f2e6'],['wood','Wood','#c89a5c'],['stone','Stone','#a9a69a'],['metal','Metal','#8fa3b2'],['tech','Tech','#6fd3e0']];
 const resName=k=>RES.find(r=>r[0]===k)[1],resCol=k=>RES.find(r=>r[0]===k)[2];
+let craftAll=false;try{craftAll=localStorage.getItem('sheepCraftAll')==='1'}catch(e){}
 function showCraft(){
   const all=[...shelterRecipes(),...RECIPES];
   const groups=[['Shelter','Shelter','Built where you stand, then upgraded in place.'],['Horns','Horns','Decide what you can break: wood, then stone, then metal, then old tech. At the very top, lasers.'],['Tools','Tools',''],['Wool','Woolcraft','Made from your own fleece. Shear often.'],['Defence','Defence and traps','']];
   const chip=(k,v)=>{const have=Math.floor(S[k]);return `<span class="cost ${have>=v?'ok':'short'}"><i style="background:${resCol(k)}"></i>${resName(k)} <b>${Math.min(have,v)}/${v}</b></span>`};
+  const canBuild=r=>!(r.done&&r.done())&&!lockReason(r)&&Object.entries(r.cost).every(([k,v])=>Math.floor(S[k])>=v);
   const card_=r=>{const done=r.done&&r.done(),why=done?'':lockReason(r),locked=!!why,short=Object.entries(r.cost).filter(([k,v])=>Math.floor(S[k])<v),ok=!done&&!locked&&!short.length;
     const label=done?'Built':locked?'Locked':short.length?'Need '+short.map(([k,v])=>`${v-Math.floor(S[k])} ${k}`).join(', '):(r.label||'Build');
     return `<div class="rec${ok?' can':done?' done':' cant'}"><div class="rh"><b>${r.name}</b>${r.tier?`<span class="tier">Tier ${r.tier}</span>`:''}</div>
       <p>${r.text}</p>${Object.keys(r.cost).length&&!done?`<div class="costs">${Object.entries(r.cost).map(([k,v])=>chip(k,v)).join('')}</div>`:''}
       ${locked?`<div class="lock">Locked: ${why}</div>`:''}${r.flock&&!done&&!locked?`<div class="lock ok">Flock of ${r.flock} or more</div>`:''}
       <button type="button" data-id="${r.id}" ${ok?'':'disabled'}>${label}</button></div>`};
+  // what you can afford right now comes first, from every track in tree order; the rest of the tree hides behind a checkbox
+  const ready=groups.flatMap(([tk])=>all.filter(r=>r.track===tk&&canBuild(r)));
   card.classList.add('wide');
-  card.innerHTML=`<div class="chead"><div><div class="eb">Craft</div><h1>Flock <span>works</span></h1></div><button id="close" type="button" class="ghost x" aria-label="Close">Close ✕</button></div>
-  <div class="resbar">${RES.map(([k,n,c])=>`<div class="res"><i style="background:${c}"></i><span>${n}</span><b>${Math.floor(S[k])}</b></div>`).join('')}<div class="res load"><span>Carrying</span><b>${Math.floor(load())}/${carryCap()}</b></div></div>
-  ${groups.map(([tk,title,sub])=>`<h2 class="trk">${title}</h2>${sub?`<div class="sub">${sub}</div>`:''}<div class="recipes">${all.filter(r=>r.track===tk).map(card_).join('')}</div>`).join('')}`;
+  card.innerHTML=`<div class="stickhead"><div class="chead"><div><div class="eb">Craft</div><h1>Flock <span>works</span></h1></div><button id="close" type="button" class="ghost x" aria-label="Close">Close ✕</button></div>
+  <div class="resbar">${RES.map(([k,n,c])=>`<div class="res"><i style="background:${c}"></i><span>${n}</span><b>${Math.floor(S[k])}</b></div>`).join('')}<div class="res load"><span>Carrying</span><b>${Math.floor(load())}/${carryCap()}</b></div></div></div>
+  <h2 class="trk">Ready to build</h2>${ready.length?`<div class="recipes">${ready.map(card_).join('')}</div>`:`<div class="sub">Nothing you can build yet. Gather more, or tick the box below to see what's coming.</div>`}
+  <label class="opt treebox"><input type="checkbox" id="showTree" ${craftAll?'checked':''}> Show full tech tree</label>
+  ${craftAll?groups.map(([tk,title,sub])=>{const rs=all.filter(r=>r.track===tk&&!canBuild(r));return rs.length?`<h2 class="trk">${title}</h2>${sub?`<div class="sub">${sub}</div>`:''}<div class="recipes">${rs.map(card_).join('')}</div>`:''}).join(''):''}`;
   ov.hidden=false;
+  $('showTree').onchange=e=>{craftAll=e.target.checked;try{localStorage.setItem('sheepCraftAll',craftAll?'1':'0')}catch(err){}const y=ov.scrollTop;showCraft();ov.scrollTop=y;$('showTree').focus({preventScroll:true})};
   card.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{build(b.dataset.id);closeCraft()});
   $('close').onclick=closeCraft;$('close').focus({preventScroll:true});ov.scrollTop=0;
 }
@@ -972,6 +983,8 @@ function hud(){
 
 // ---------- overlays ----------
 const ov=$('overlay'),card=$('card');
+// a click or tap on the dimmed backdrop, outside the card, closes the craft menu
+ov.addEventListener('click',e=>{if(e.target===ov&&$('showTree'))closeCraft()});
 function showIntro(){
   card.classList.remove('wide');
   card.innerHTML=`<div class="eb">A survival game</div><h1>The Sheep Are <span>Angry!</span></h1>
