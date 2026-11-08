@@ -19,7 +19,12 @@ html,body{height:100%;margin:0;overflow:hidden;background:#05070a;color:var(--in
 #vFlock.pulse{animation:pulse 1.2s ease-out}
 @keyframes pulse{0%{color:#e6b422;transform:scale(1.35)}100%{color:inherit;transform:scale(1)}}
 #vFlock{display:inline-block;transform-origin:left center}
-@media (prefers-reduced-motion:reduce){#vFlock.pulse{animation:none}}
+/* hunger warning: below 10 the bar and number flash */
+.starving{animation:starve .5s steps(1,end) infinite}
+@keyframes starve{50%{opacity:.25}}
+#vHunger.starving{color:#ff6b5a;font-weight:700}
+@media (prefers-reduced-motion:reduce){#vFlock.pulse{animation:none}.starving{animation:starveSoft 1s ease-in-out infinite alternate}}
+@keyframes starveSoft{to{opacity:.55}}
 /* narrow screens: a compact stats panel that leaves room for the minimap (28% of the width) beside it */
 @media (max-width:640px){#hud{min-width:0;max-width:calc(72vw - 36px);padding:7px 9px;gap:3px;font-size:10.5px;box-sizing:border-box}
   #hud .top{font-size:13px}.reg{font-size:9.5px}.row{grid-template-columns:44px 1fr 40px;gap:6px}.bar{height:5px}.stores{gap:1px 7px}}
@@ -437,6 +442,11 @@ function musicPump(){const a=actx;if(!a||!M.bus)return;
   if(!M.switchAt){M.bus.gain.setTargetAtTime(vol,now,M.key===want?0.5:1);M.lp.frequency.setTargetAtTime(night?1400:9000,now,2)}
   const sg=SONGS[M.key];if(M.next<now)M.next=now+0.02;
   while(M.next<now+0.2){const sd=sg?60/sg.bpm/4:0.125;if(sg&&!M.switchAt)musicStep(sg,M.k,M.next,sd,night);M.k++;M.next+=sd}}
+// Hunger alarm: two short high beeps, pitched above the music so they cut through without being loud.
+function hungerAlarm(){try{const a=audio();if(!a)return;const t=a.currentTime,out=a.createGain();out.gain.value=0.16;out.connect(a.destination);
+  [[1046,0],[1318,0.16]].forEach(([f,d])=>{const o=a.createOscillator(),g=a.createGain();o.type='triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(0,t+d);g.gain.linearRampToValueAtTime(1,t+d+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+d+0.13);
+    o.connect(g).connect(out);o.start(t+d);o.stop(t+d+0.15)});}catch(e){}}
 function chime(low){try{const actx=audio();if(!actx)return;const t=actx.currentTime;
   [low?392:523,low?523:659,low?659:784].forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.value=f;
     g.gain.setValueAtTime(0,t+i*0.09);g.gain.linearRampToValueAtTime(0.12,t+i*0.09+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.09+0.4);o.connect(g).connect(actx.destination);o.start(t+i*0.09);o.stop(t+i*0.09+0.45)})}catch(e){}}
@@ -639,6 +649,8 @@ function update(dt){
     if(S.flock.length>=3&&eaten<dt*0.08*(S.flock.length+1)*0.3&&!S.barrenShown){S.barrenShown=true;toast('This pasture is grazed bare. Grass takes many days to grow back, so move the flock on.',4.5)}
     if(isNight()&&!S.grazeShown&&!inFold(p)){S.grazeShown=true;toast('Heads down. While the flock grazes it spreads out and can\'t see the wolves coming.')}}
   p.hunger=clamp(p.hunger,0,100);
+  // hunger alarm: a soft two-tone beep every 2 seconds while the bar is below 10
+  if(p.hunger<10){S.hungerBeep=(S.hungerBeep||0)-dt;if(S.hungerBeep<=0){S.hungerBeep=2;hungerAlarm()}}else S.hungerBeep=0;
   if(p.hunger<=0)p.health-=dt*6;else if(p.hunger>50)p.health+=dt*1.2*(S.balm?2:1);
   p.health=Math.min(100,p.health);
   // regrowth is slow, and bare earth is slowest of all to recover
@@ -1053,7 +1065,10 @@ function hud(){
   const ph=phase(),hrs=(6+ph*24)%24;
   set('day',`Day ${S.day} · ${String(~~hrs).padStart(2,'0')}:${String(~~((hrs%1)*60)).padStart(2,'0')}${isNight()?' · night':''}`);
   set('rank',rank(S.flock.length+1));
-  bar('bHunger',p.hunger/100);set('vHunger',~~p.hunger);bar('bHealth',p.health/100);set('vHealth',Math.max(0,~~p.health));
+  bar('bHunger',p.hunger/100);set('vHunger',~~p.hunger);
+  // hunger colour: green when fed, yellow as it drops, red before it runs out, flashing below 10
+  const hb=$('bHunger'),starving=p.hunger<10&&!S.over;hb.style.background=p.hunger>50?'#9cbf6a':p.hunger>25?'#e6b422':'#ff3b30';
+  hb.classList.toggle('starving',starving);$('vHunger').classList.toggle('starving',starving);bar('bHealth',p.health/100);set('vHealth',Math.max(0,~~p.health));
   bar('bFleece',p.fleece/10);set('vFleece',p.fleece.toFixed(1)+'kg');$('bFleece').style.background=p.fleece>7?'#e0835a':p.fleece>4?'#e6b422':'#f4f2e6';
   const R=REG[regionAt(p.x,p.y)];$('region').textContent=R.name;$('region').style.color=R.col;
   const dogs=S.preds.filter(w=>w.tame).length,rams=S.flock.filter(s=>s.ram).length;
