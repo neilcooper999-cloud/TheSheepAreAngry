@@ -880,6 +880,58 @@ function terrDetail(tr,x,y,tx,ty){const h=(tx*31+ty*17)%29;
   else if(tr===ROAD){ctx.strokeStyle='rgba(30,30,28,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+h,y);ctx.lineTo(x+h+6,y+14);ctx.lineTo(x+h+2,y+26);ctx.stroke();
     if(h%3===0){ctx.fillStyle='rgba(110,150,70,.6)';ctx.fillRect(x+(h*3)%30,y+(h*5)%30,4,3)}}}
 const onScreen=(x,y,m)=>x>-m&&y>-m&&x<vw+m&&y<vh+m;
+// Natural-looking trees and rocks. Each object gets a shape built once from a seed of its position,
+// so it looks the same every frame. Collision still uses the plain r circle.
+function srand(x,y,k=0){let h=(Math.imul(~~x,73856093)^Math.imul(~~y,19349663)^Math.imul(k+1,83492791))>>>0;
+  return()=>{h=(h+0x6D2B79F5)>>>0;let t=Math.imul(h^h>>>15,1|h);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}}
+function treeShape(t){if(t.shape)return t.shape;const R=srand(t.x,t.y,1),r=t.r,wood=REG[regionAt(t.x,t.y)]?.key==='woods';
+  const hue=wood?-12:R()*14-7,n=7+~~(R()*3),rot=R()*7,br=[],outer=[],mid=[],top=[];
+  for(let k=0;k<5+~~(R()*3);k++){const a=rot+k*6.283/6+R()*0.6,l=r*(1.08+R()*0.32),bend=(R()-0.5)*0.5;br.push({a,l,bend,w:2.4+R()*1.6,tw:(R()<0.5?-1:1)*(0.45+R()*0.35)})}
+  for(let k=0;k<n;k++){const a=rot+k*6.283/n+(R()-0.5)*0.4;outer.push({a,d:r*(0.58+R()*0.12),s:r*(0.33+R()*0.1)})}
+  for(let k=0;k<4;k++){const a=rot+k*1.57+R()*0.8;mid.push({a,d:r*(0.28+R()*0.15),s:r*(0.34+R()*0.08)})}
+  for(let k=0;k<3;k++){const a=-2.36+(R()-0.5)*1.4;top.push({a,d:r*(0.2+R()*0.35),s:r*(0.16+R()*0.1)})}
+  const col=(l)=>`hsl(${(wood?108:100)+hue},${wood?42:45}%,${l}%)`;
+  return t.shape={br,outer,mid,top,c:[col(wood?14:16),col(wood?20:23),col(wood?26:30),col(wood?33:38)],res0:t.res}}
+function blobs(x,y,list,sc){ctx.beginPath();for(const b of list){const bx=x+Math.cos(b.a)*b.d*sc,by=y+Math.sin(b.a)*b.d*sc;ctx.moveTo(bx+b.s*sc,by);ctx.arc(bx,by,b.s*sc,0,6.284)}ctx.fill()}
+function drawTree(t,x,y){const sh=treeShape(t),r=t.r,left=clamp(t.res/(sh.res0||1),0,1),sc=0.55+0.45*left;
+  ctx.fillStyle='rgba(0,0,0,.28)';blobs(x+6,y+7,sh.outer,sc*1.04);
+  // branches reach out from the trunk, poking past the canopy edge (more of them show as the tree is chopped)
+  ctx.lineCap='round';ctx.strokeStyle='#4a321d';
+  for(const b of sh.br){const ex=x+Math.cos(b.a)*b.l,ey=y+Math.sin(b.a)*b.l,mx=x+Math.cos(b.a+b.bend)*b.l*0.55,my=y+Math.sin(b.a+b.bend)*b.l*0.55;
+    ctx.lineWidth=b.w;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(mx,my,ex,ey);ctx.stroke();
+    const fx=x+Math.cos(b.a)*b.l*0.78,fy=y+Math.sin(b.a)*b.l*0.78;ctx.lineWidth=b.w*0.5;ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(fx+Math.cos(b.a+b.tw)*b.l*0.3,fy+Math.sin(b.a+b.tw)*b.l*0.3);ctx.moveTo(fx,fy);ctx.lineTo(fx+Math.cos(b.a-b.tw*0.6)*b.l*0.22,fy+Math.sin(b.a-b.tw*0.6)*b.l*0.22);ctx.stroke()}
+  ctx.lineCap='butt';
+  ctx.fillStyle=sh.c[0];blobs(x,y,sh.outer,sc);
+  ctx.fillStyle=sh.c[1];blobs(x-r*0.05,y-r*0.05,sh.outer,sc*0.86);
+  ctx.fillStyle=sh.c[2];blobs(x-r*0.08,y-r*0.1,sh.mid,sc);
+  ctx.fillStyle=sh.c[3];blobs(x,y,sh.top,sc);
+  // a glimpse of trunk and limbs through the leaves
+  ctx.strokeStyle='rgba(60,40,22,.55)';ctx.lineWidth=1.4;ctx.beginPath();
+  for(let k=0;k<3;k++){const b=sh.br[k];ctx.moveTo(x+Math.cos(b.a)*r*0.12,y+Math.sin(b.a)*r*0.12);ctx.lineTo(x+Math.cos(b.a+b.bend*0.5)*r*0.38*sc,y+Math.sin(b.a+b.bend*0.5)*r*0.38*sc)}ctx.stroke();
+  ctx.fillStyle='#5a3d22';ctx.beginPath();ctx.arc(x,y,Math.max(2.2,r*0.11),0,6.284);ctx.fill()}
+function rockShape(o,mossy){if(o.shape)return o.shape;const R=srand(o.x,o.y,2),r=o.r,n=7+~~(R()*4),pts=[];
+  for(let k=0;k<n;k++){const a=k*6.283/n+(R()-0.5)*0.5,d=r*(0.78+R()*0.3);pts.push([Math.cos(a)*d,Math.sin(a)*d*(0.85+R()*0.1)])}
+  const tone=R()*14-7,peak=[(-0.18+R()*0.12)*r,(-0.22+R()*0.12)*r],facets=pts.map((q,k)=>{const q2=pts[(k+1)%n],ex=q2[0]-q[0],ey=q2[1]-q[1],nl=Math.hypot(ex,ey)||1,
+    lit=clamp(0.5+((ey/nl)*-0.7+(-ex/nl)*-0.7)*0.5,0,1);return `hsl(${45+tone*0.5},${o.big?6:7}%,${30+lit*34+tone}%)`});
+  const cracks=[];for(let k=0;k<(o.big?3:1);k++){let a=R()*6.283,cx=Math.cos(a)*r*0.15,cy=Math.sin(a)*r*0.15;const seg=[[cx,cy]];for(let j=0;j<3;j++){a+=(R()-0.5)*1.2;cx+=Math.cos(a)*r*0.22;cy+=Math.sin(a)*r*0.22;seg.push([cx,cy])}cracks.push(seg)}
+  const specks=[];for(let k=0;k<4+~~(r/5);k++){const a=R()*6.283,d=R()*r*0.7;specks.push([Math.cos(a)*d,Math.sin(a)*d,R()<0.5])}
+  const moss=mossy&&R()<0.55?{a:R()*6.283,d:r*0.45,s:r*(0.22+R()*0.15)}:null;
+  return o.shape={pts,peak,facets,cracks,specks,moss,res0:o.res||1}}
+function poly(x,y,pts,sc=1){ctx.beginPath();pts.forEach((q,k)=>k?ctx.lineTo(x+q[0]*sc,y+q[1]*sc):ctx.moveTo(x+q[0]*sc,y+q[1]*sc));ctx.closePath()}
+function drawRock(o,x,y,mossy){const sh=rockShape(o,mossy),n=sh.pts.length;
+  ctx.fillStyle='rgba(0,0,0,.27)';poly(x+3,y+4,sh.pts,1.02);ctx.fill();
+  // faceted faces meeting at a ridge: lit up-left, shaded down-right
+  for(let k=0;k<n;k++){const a=sh.pts[k],b=sh.pts[(k+1)%n];ctx.fillStyle=sh.facets[k];ctx.beginPath();ctx.moveTo(x+sh.peak[0],y+sh.peak[1]);ctx.lineTo(x+a[0],y+a[1]);ctx.lineTo(x+b[0],y+b[1]);ctx.closePath();ctx.fill()}
+  ctx.strokeStyle='rgba(30,30,26,.45)';ctx.lineWidth=1;poly(x,y,sh.pts);ctx.stroke();
+  for(const[sx,sy,lt]of sh.specks){ctx.fillStyle=lt?'rgba(255,255,240,.18)':'rgba(0,0,0,.18)';ctx.fillRect(x+sx,y+sy,2,2)}
+  if(sh.moss){const m=sh.moss;ctx.fillStyle='rgba(98,128,58,.75)';ctx.beginPath();ctx.ellipse(x+Math.cos(m.a)*m.d,y+Math.sin(m.a)*m.d,m.s,m.s*0.7,m.a,0,6.284);ctx.fill()}
+  // more cracks show as a big rock is broken up
+  if(o.big){const dmg=1-clamp(o.res/sh.res0,0,1),show=1+Math.round(dmg*2);ctx.strokeStyle='rgba(30,28,24,.6)';ctx.lineWidth=1.4;
+    for(let c=0;c<Math.min(show,sh.cracks.length);c++){const seg=sh.cracks[c];ctx.beginPath();seg.forEach((q,k)=>k?ctx.lineTo(x+q[0],y+q[1]):ctx.moveTo(x+q[0],y+q[1]));ctx.stroke()}}}
+function drawStump(s,x,y){const R=srand(s.x,s.y,3);ctx.strokeStyle='#4a321d';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();
+  for(let k=0;k<4;k++){const a=R()*6.283;ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*11,y+Math.sin(a)*11)}ctx.stroke();ctx.lineCap='butt';
+  ctx.fillStyle='#6b4c30';ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();ctx.fillStyle='#b08860';ctx.beginPath();ctx.arc(x,y,5,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(107,76,48,.7)';ctx.lineWidth=0.8;ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.stroke()}
 function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   const p=S.p,sh=S.shake>0?rnd(-1,1)*Math.min(10,S.shake*26):0,camx=p.x-vw/2+sh,camy=p.y-vh/2+sh;
@@ -897,7 +949,7 @@ function draw(){
   for(const pen of S.pens){const x=pen.x-camx,y=pen.y-camy;if(!known(pen)||!onScreen(x,y,60))continue;
     ctx.strokeStyle='#7a5634';ctx.lineWidth=5;ctx.setLineDash([14,6]);ctx.strokeRect(x-pen.r,y-pen.r,pen.r*2,pen.r*2);ctx.setLineDash([]);
     ctx.fillStyle='#5c3f26';for(const[cx,cy]of[[-1,-1],[1,-1],[-1,1],[1,1]])ctx.fillRect(x+cx*pen.r-4,y+cy*pen.r-4,8,8)}
-  for(const s of S.stumps){const x=s.x-camx,y=s.y-camy;if(!known(s)||!onScreen(x,y,20))continue;ctx.fillStyle='#6b4c30';ctx.beginPath();ctx.arc(x,y,7,0,7);ctx.fill();ctx.fillStyle='#a07a50';ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill()}
+  for(const s of S.stumps){const x=s.x-camx,y=s.y-camy;if(!known(s)||!onScreen(x,y,20))continue;drawStump(s,x,y)}
   for(const h of S.houses){const x=h.x-camx,y=h.y-camy;if(!known(h)&&!known({x:h.x+h.w,y:h.y+h.h}))continue;if(x>vw||y>vh||x+h.w<0||y+h.h<0)continue;
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x+6,y+8,h.w,h.h);ctx.fillStyle=h.res<8?'#6a3f30':'#7d4a37';ctx.fillRect(x,y,h.w,h.h);
     ctx.strokeStyle='#5c3326';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y+h.h/2);ctx.lineTo(x+h.w,y+h.h/2);ctx.stroke();
@@ -906,22 +958,15 @@ function draw(){
   for(const r of S.posts){const x=r.x-camx,y=r.y-camy;if(!known(r)||!onScreen(x,y,20))continue;ctx.fillStyle='#6b4c30';ctx.fillRect(x-4,y-4,8,8)}
   ctx.strokeStyle='rgba(150,150,140,.6)';ctx.lineWidth=1;
   for(let i=1;i<S.posts.length;i++){const a=S.posts[i-1],b=S.posts[i];if(known(a)&&known(b)&&Math.hypot(a.x-b.x,a.y-b.y)<40){ctx.beginPath();ctx.moveTo(a.x-camx,a.y-camy);ctx.lineTo(b.x-camx,b.y-camy);ctx.stroke()}}
-  for(const r of S.rocks){const x=r.x-camx,y=r.y-camy;if(!known(r)||!onScreen(x,y,40))continue;
-    ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.arc(x+3,y+4,r.r,0,7);ctx.fill();
-    ctx.fillStyle=r.big?'#7f7d74':'#8c8a80';ctx.beginPath();ctx.arc(x,y,r.r,0,7);ctx.fill();ctx.fillStyle='#a6a498';ctx.beginPath();ctx.arc(x-r.r*0.3,y-r.r*0.3,r.r*0.5,0,7);ctx.fill();
-    if(r.big){ctx.strokeStyle='rgba(40,40,36,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-r.r*0.5,y+r.r*0.1);ctx.lineTo(x+r.r*0.2,y+r.r*0.4);ctx.stroke()}}
-  for(const t of S.trees){const x=t.x-camx,y=t.y-camy;if(!known(t)||!onScreen(x,y,40))continue;
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(x+5,y+6,t.r,0,7);ctx.fill();
-    ctx.fillStyle='#2f5a24';ctx.beginPath();ctx.arc(x,y,t.r,0,7);ctx.fill();
-    ctx.fillStyle='#3e7230';ctx.beginPath();ctx.arc(x-t.r*0.25,y-t.r*0.25,t.r*0.62,0,7);ctx.fill()}
+  for(const r of S.rocks){const x=r.x-camx,y=r.y-camy;if(!known(r)||!onScreen(x,y,40))continue;drawRock(r,x,y,terrAt(r.x,r.y)===MEADOW)}
+  for(const t of S.trees){const x=t.x-camx,y=t.y-camy;if(!known(t)||!onScreen(x,y,40))continue;drawTree(t,x,y)}
   for(const k of S.wrecks){const x=k.x-camx,y=k.y-camy;if(!known(k)||!onScreen(x,y,40))continue;
     ctx.save();ctx.translate(x,y);ctx.rotate(k.a);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(-k.r+4,-k.r*0.55+5,k.r*2,k.r*1.1);
     ctx.fillStyle=k.tractor?'#8a3b26':'#5d6a72';ctx.fillRect(-k.r,-k.r*0.55,k.r*2,k.r*1.1);
     ctx.fillStyle='#7a4a2a';ctx.fillRect(-k.r*0.6,-k.r*0.3,k.r*0.7,k.r*0.6);
     ctx.fillStyle='#222';if(k.tractor){ctx.fillRect(-k.r,-k.r*0.8,k.r*0.8,5);ctx.fillRect(-k.r,k.r*0.8-5,k.r*0.8,5)}else{ctx.fillRect(-k.r*0.8,-k.r*0.7,7,4);ctx.fillRect(k.r*0.5,-k.r*0.7,7,4);ctx.fillRect(-k.r*0.8,k.r*0.7-4,7,4);ctx.fillRect(k.r*0.5,k.r*0.7-4,7,4)}
     ctx.restore()}
-  for(const w of S.walls){const x=w.x-camx,y=w.y-camy;if(!onScreen(x,y,20))continue;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(x+2,y+3,w.r,0,7);ctx.fill();
-    ctx.fillStyle='#9a978a';ctx.beginPath();ctx.arc(x,y,w.r,0,7);ctx.fill();ctx.fillStyle='#b4b1a4';ctx.beginPath();ctx.arc(x-3,y-3,w.r*0.45,0,7);ctx.fill()}
+  for(const w of S.walls){const x=w.x-camx,y=w.y-camy;if(!onScreen(x,y,20))continue;drawRock(w,x,y,false)}
   for(const tr of S.traps){const x=tr.x-camx,y=tr.y-camy;if(!onScreen(x,y,20))continue;ctx.fillStyle='#5c4326';ctx.beginPath();ctx.ellipse(x,y,15,10,0.3,0,7);ctx.fill();
     ctx.fillStyle='#8a7048';for(let k=0;k<5;k++){ctx.beginPath();ctx.arc(x-9+k*4.5,y+((k*7)%6)-3,3,0,7);ctx.fill()}}
   for(const dc of S.decoys){const x=dc.x-camx,y=dc.y-camy;if(!onScreen(x,y,30))continue;
