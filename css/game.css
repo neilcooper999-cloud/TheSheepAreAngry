@@ -1,0 +1,560 @@
+/* Single look: the game world is its own palette, so colors are set explicitly for both host themes. */
+:root {
+  --ink: #f4f2e6;
+  --panel: rgba(22, 28, 18, 0.8);
+  --tag: #e6b422;
+  --rust: #e0835a;
+  --moss: #9cbf6a;
+  --bad: #e05a4a;
+  --display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #05070a;
+  color: var(--ink);
+  font: 500 13px/1.3 var(--mono);
+}
+#c {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+#hud {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: max(10px, env(safe-area-inset-left, 0px));
+  background: var(--panel);
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  min-width: 210px;
+  pointer-events: none;
+}
+.row {
+  display: grid;
+  grid-template-columns: 62px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.bar {
+  height: 7px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  width: 50%;
+  border-radius: 4px;
+}
+#hud .top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font: 800 15px/1.1 var(--display);
+}
+#rank {
+  color: var(--tag);
+}
+#vFlock.pulse {
+  animation: pulse 1.2s ease-out;
+}
+@keyframes pulse {
+  0% {
+    color: #e6b422;
+    transform: scale(1.35);
+  }
+  100% {
+    color: inherit;
+    transform: scale(1);
+  }
+}
+#vFlock {
+  display: inline-block;
+  transform-origin: left center;
+}
+/* hunger warning: below 10 the bar and number flash */
+.starving {
+  animation: starve 0.5s steps(1, end) infinite;
+}
+@keyframes starve {
+  50% {
+    opacity: 0.25;
+  }
+}
+#vHunger.starving {
+  color: #ff6b5a;
+  font-weight: 700;
+}
+@media (prefers-reduced-motion: reduce) {
+  #vFlock.pulse {
+    animation: none;
+  }
+  .starving {
+    animation: starveSoft 1s ease-in-out infinite alternate;
+  }
+}
+@keyframes starveSoft {
+  to {
+    opacity: 0.55;
+  }
+}
+/* narrow screens: a compact stats panel that leaves room for the minimap (28% of the width) beside it */
+@media (max-width: 640px) {
+  #hud {
+    min-width: 0;
+    max-width: calc(72vw - 36px);
+    padding: 7px 9px;
+    gap: 3px;
+    font-size: 10.5px;
+    box-sizing: border-box;
+  }
+  #hud .top {
+    font-size: 13px;
+  }
+  .reg {
+    font-size: 9.5px;
+  }
+  .row {
+    grid-template-columns: 44px 1fr 40px;
+    gap: 6px;
+  }
+  .bar {
+    height: 5px;
+  }
+  .stores {
+    gap: 1px 7px;
+  }
+}
+.reg {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+.stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-variant-numeric: tabular-nums;
+  color: #d8d4c0;
+}
+.stores b {
+  color: var(--ink);
+}
+/* Charge is the big button in the corner; the smaller ones sit on an arc above and to its left */
+#btns {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  width: 190px;
+  height: 190px;
+  pointer-events: none;
+}
+#btns button {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: var(--panel);
+  color: var(--ink);
+  pointer-events: auto;
+  font: 800 10px/1 var(--display);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 0;
+}
+#btns #bCharge {
+  width: 88px;
+  height: 88px;
+  right: 0;
+  bottom: 0;
+  font-size: 15px;
+}
+#btns #bGraze {
+  right: 134px;
+  bottom: 18px;
+}
+#btns #bBleat {
+  right: 118px;
+  bottom: 76px;
+}
+#btns #bShear {
+  right: 76px;
+  bottom: 118px;
+}
+#btns #bCraft {
+  right: 18px;
+  bottom: 134px;
+}
+#btns button span {
+  display: block;
+  font: 500 9px/1 var(--mono);
+  opacity: 0.6;
+  margin-top: 3px;
+}
+#btns button:active,
+#btns button.on {
+  background: rgba(230, 180, 34, 0.4);
+}
+/* cooldown ring: --p runs from 0 to 1 as the action recharges, and the ring turns yellow when it's ready */
+#btns button {
+  --p: 1;
+  border-color: transparent;
+}
+#btns button::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(var(--ring, rgba(255, 255, 255, 0.55)) calc(var(--p) * 360deg), rgba(255, 255, 255, 0.12) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+}
+#btns button[hidden] {
+  display: none;
+}
+#btns button.cooling {
+  color: rgba(244, 242, 230, 0.55);
+}
+#btns button.ready {
+  --ring: var(--tag);
+}
+#btns button:focus-visible {
+  outline: 2px solid var(--tag);
+}
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: rgba(5, 7, 10, 0.78);
+  overflow: auto;
+  padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.card {
+  max-width: 32rem;
+  background: #232c1c;
+  border: 1px solid #3d4a31;
+  border-radius: 10px;
+  padding: 22px;
+  margin: auto 0;
+  margin-block: auto;
+  padding-block: 22px;
+  font:
+    400 14px/1.5 system-ui,
+    sans-serif;
+}
+.card h1 {
+  font: 800 2.2rem/1 var(--display);
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.02em;
+}
+.card h1 span {
+  color: var(--rust);
+}
+.card .eb {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--moss);
+}
+.card ul {
+  padding-left: 1.1rem;
+  margin: 0.6rem 0;
+}
+.card li {
+  margin-bottom: 0.25rem;
+}
+.card kbd {
+  font: 500 12px var(--mono);
+  background: #36422b;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.card button {
+  margin-top: 10px;
+  font: 800 16px/1 var(--display);
+  background: var(--tag);
+  color: #2b2300;
+  border: 0;
+  border-radius: 6px;
+  padding: 12px 20px;
+  cursor: pointer;
+}
+.recipes {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 0.4rem;
+}
+.card.wide {
+  max-width: 50rem;
+  width: 100%;
+}
+.chead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+/* craft and details pages: the header (with Close/Back) sticks to the top while the list scrolls under it */
+.card.wide .chead,
+.stickhead {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  background: #232c1c;
+  margin: -22px -22px 0;
+  padding: 22px 22px 10px;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 8px 10px -8px rgba(0, 0, 0, 0.6);
+}
+.stickhead .chead {
+  position: static;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+.stickhead .resbar {
+  position: static;
+  padding-block: 0;
+  margin-bottom: 0;
+}
+.card button.x {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+.resbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0.7rem 0 0.2rem;
+  position: sticky;
+  top: -22px;
+  background: #232c1c;
+  padding-block: 8px;
+  z-index: 1;
+}
+.res {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #1a2114;
+  border: 1px solid #3d4a31;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: 500 12px var(--mono);
+}
+.res i,
+.cost i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.res.load {
+  margin-left: auto;
+}
+.res b {
+  font: 800 18px/1 var(--display);
+  font-variant-numeric: tabular-nums;
+}
+.sub {
+  font-size: 12px;
+  color: #b9b4a0;
+  margin: -0.2rem 0 0.5rem;
+}
+.recipes {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+}
+.rec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #2c3723;
+  border: 1px solid #3d4a31;
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+.rec.can {
+  border-color: var(--tag);
+}
+.rec.cant {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+.rec.done {
+  opacity: 0.7;
+}
+.rh {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.tier {
+  font: 500 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--moss);
+  white-space: nowrap;
+}
+.costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #1a2114;
+  font: 500 11px var(--mono);
+}
+.cost.ok {
+  color: #b6d68a;
+}
+.cost.short {
+  color: #ef9a74;
+}
+.lock {
+  font: 500 11px var(--mono);
+  color: #d8d4c0;
+}
+.lock.ok {
+  color: #b6d68a;
+}
+.card .rec button {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.rec > div {
+  min-width: 0;
+}
+.rec p {
+  margin: 0.15rem 0;
+  font-size: 13px;
+  color: #d8d4c0;
+}
+.rec b {
+  font: 800 15px/1.2 var(--display);
+}
+.rk {
+  font: 500 10px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--moss);
+  margin-bottom: 3px;
+}
+.rc {
+  font: 500 11px var(--mono);
+  color: var(--tag);
+}
+.card h2.trk {
+  font: 800 13px/1 var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin: 1rem 0 0.4rem;
+}
+.card .rec button {
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 14px;
+}
+.card button:disabled {
+  background: #4a5440;
+  color: #8c947f;
+  cursor: not-allowed;
+}
+.card button.ghost {
+  background: none;
+  color: var(--ink);
+  border: 1px solid #55634a;
+}
+.introbtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+.introbtns button {
+  margin-top: 0;
+}
+.card p.warn {
+  font: 800 17px/1.3 var(--display);
+  color: var(--rust);
+}
+.opt {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #2c3723;
+  border: 1px solid #3d4a31;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+  cursor: pointer;
+}
+.opt input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--tag);
+  flex: none;
+}
+.opt b {
+  display: block;
+  font: 800 15px/1.2 var(--display);
+}
+.opt.treebox {
+  align-items: center;
+  font: 700 15px/1.2 var(--display);
+  margin: 16px 0 4px;
+}
+.card button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+#toast {
+  position: fixed;
+  left: 50%;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  transform: translateX(-50%);
+  font: 800 16px/1.2 var(--display);
+  background: var(--panel);
+  padding: 8px 14px;
+  border-radius: 6px;
+  pointer-events: none;
+  text-align: center;
+  max-width: min(34rem, calc(100% - 32px));
+}
+@media (max-width: 700px) {
+  #toast {
+    top: auto;
+    bottom: calc(214px + env(safe-area-inset-bottom, 0px));
+  }
+}
