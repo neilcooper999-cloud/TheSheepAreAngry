@@ -3,7 +3,7 @@
   "private": true,
   "description": "A top-down survival game where you play a sheep.",
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.mjs",
     "build": "node tools/build-single.mjs",
     "export-data": "node tools/export-data.mjs",
     "format": "npx prettier@3.3.3 --write \"src/**/*.js\" \"tests/**/*.mjs\" \"tools/**/*.mjs\" css/game.css",
