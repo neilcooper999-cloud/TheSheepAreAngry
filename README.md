@@ -6,7 +6,7 @@ You are Flossy, a ewe with a yellow ear tag. The camera stays centred on her whi
 
 ## Play
 
-Open `index.html` in a browser. It is a single file with no build step.
+Open `index.html` in a browser. There is no build step. Add `?seed=1234` to the address to replay the same world.
 
 - WASD or arrow keys to move (drag anywhere on a touch screen)
 - Space or GRAZE to eat
@@ -52,6 +52,15 @@ The top of the tree needs a big flock as well as materials. Iron-shod Horns let 
 
 Wool is free if you keep shearing, so plenty needs it, and in quantity: Fleece Panniers and Felted Saddlebags (the flock carries 20, then 60, more), Woolly Ear-trumpets (your bleat reaches half as far again), Lanolin Balm (Flossy heals twice as fast, and bitten sheep recover sooner) and Knitted Ram Coats (each ram takes one more wolf bite). Most horn upgrades and shelter tiers need wool as well.
 
+## Code
+
+The rules live in `src/core/` (no browser code, tested in Node) and everything that needs a browser lives in `src/web/`. See `docs/ARCHITECTURE.md` for the layout, how a frame works, and the routes to an Android app.
+
+- `npm test` runs the tests (Node 18 or later, nothing to install)
+- `npm run build` writes `dist/sheep.html`, the whole game in one file
+- `npm run export-data` writes the game data to `dist/game-data.json`
+
 ## Docs
 
 - `docs/concept.html`: the game concept (core loop, threats, rising to dominance, progression)
+- `docs/ARCHITECTURE.md`: code structure and Android porting plan
